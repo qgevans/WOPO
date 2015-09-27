@@ -36,6 +36,8 @@
        01 BUFFER.
            03 MSG-LENGTH PIC 9(3).
            03 MSG-BODY PIC X(512).
+       01 WOPO.
+           03 WOPO-NICK PIC X(16).
        01 IRC-MESSAGE.
            03 PREFIX.
                05 NICK PIC X(16).
@@ -44,6 +46,7 @@
            03 COMMAND PIC X(16).
 	       88 PING VALUE "PING".
 	       88 PRIVMSG VALUE "PRIVMSG".
+	       88 NOTICE VALUE "NOTICE".
            03 PARAMETERS.
                05 TARGET PIC X(50).
                05 REST PIC X(480).
@@ -75,13 +78,14 @@
                                GO TO DIE.
            MOVE "NICK" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
+	   MOVE CONFIG-VALUE TO WOPO-NICK.
            MOVE 1 TO MSG-LENGTH.
            INITIALIZE MSG-BODY.
 	   STRING "NICK"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            ADD 1 TO MSG-LENGTH.
-           STRING CONFIG-VALUE DELIMITED BY SPACE,
+           STRING WOPO-NICK DELIMITED BY SPACE,
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
 	   PERFORM SEND-LINE.
@@ -202,7 +206,29 @@
            IF PING THEN
                PERFORM PONG
            ELSE IF PRIVMSG THEN
-               PERFORM HANDLE-PRIVMSG.
+               PERFORM HANDLE-MESSAGE
+	   ELSE IF NOTICE THEN
+	       PERFORM HANDLE-MESSAGE.
+
+       BEGIN-REPLY.
+           INITIALIZE MSG-BODY.
+           MOVE 1 TO MSG-LENGTH.
+           STRING COMMAND
+                  INTO MSG-BODY
+                  WITH POINTER MSG-LENGTH.
+           ADD 1 TO MSG-LENGTH.
+           IF TARGET IS EQUAL TO WOPO-NICK THEN
+               STRING NICK
+                      INTO MSG-BODY
+                      WITH POINTER MSG-LENGTH
+           ELSE
+               STRING TARGET
+                      INTO MSG-BODY
+                      WITH POINTER MSG-LENGTH.
+           ADD 1 TO MSG-LENGTH.
+           STRING ":"
+                  INTO MSG-BODY
+                  WITH POINTER MSG-LENGTH.
 
        PONG.
 	   STRING "PONG"
@@ -210,7 +236,7 @@
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
 
-       HANDLE-PRIVMSG.
+       HANDLE-MESSAGE.
            PERFORM GET-PARAMS.
            MOVE PARAM(1) TO WORK.
            IF IS-COMMAND THEN
@@ -233,26 +259,14 @@
                    PERFORM HANDLE-RELEVEL.
 
        HANDLE-HELP.
-           INITIALIZE MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
-           STRING "PRIVMSG "
-                  TARGET
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
-           STRING ":$HELP $LEVEL $OP $JOIN $PART $QUIT $RELEVEL"
+           PERFORM BEGIN-REPLY.
+           STRING "$HELP $LEVEL $OP $JOIN $PART $QUIT $RELEVEL"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
 
        HANDLE-SOURCE.
-           INITIALIZE MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
-           STRING "PRIVMSG "
-                  TARGET
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
+           PERFORM BEGIN-REPLY.
            STRING ":HTTPS://GITHUB.COM/HEDDWCH/WOPO"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
@@ -265,15 +279,8 @@
                MOVE NICK TO USER-NAME.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           INITIALIZE MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
-           STRING "PRIVMSG " DELIMITED BY SIZE
-                  TARGET DELIMITED BY SPACE
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH
-           STRING ":"
-                  USER-RECORD
+           PERFORM BEGIN-REPLY
+           STRING USER-RECORD
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.

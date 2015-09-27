@@ -90,7 +90,6 @@ void CHANNEL__INIT(char *buffer)
 int CHANNEL__OPEN(void)
 {
   channel_from_cobol();
-  printf("Connecting to: %s\n", msg_body);
   if(!strlen(msg_body)) {
     channel_string_to_cobol("No host specified");
     return EBADDEST;
