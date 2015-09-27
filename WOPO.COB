@@ -205,7 +205,6 @@
                PERFORM HANDLE-PRIVMSG.
 
        PONG.
-           DISPLAY "PONG".
 	   STRING "PONG"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
