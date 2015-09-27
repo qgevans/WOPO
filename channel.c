@@ -147,7 +147,6 @@ int CHANNEL__SEND(void)
   char *msg;
   int sent, total;
   channel_from_cobol();
-  printf("Sending: %s\n", msg_body);
   sent = 0;
   total = strlen(msg_body);
   msg_body[total++] = '\n';
@@ -183,7 +182,6 @@ int CHANNEL__RECV(void)
     for(size_t i = 0; i < recv_buf_pos; i++) {
       recv_buf[i] = message_end[i];
     }
-    printf("Received: %s\n", msg_body);
     channel_to_cobol();
     return 0;
   }
