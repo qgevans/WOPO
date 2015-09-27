@@ -25,7 +25,7 @@
 #define EHUP 30
 #define ESERV 40
 
-char *msg_length, *msg_body;
+char *msg_length, *msg_body, *channel_status;
 int msg_body_len;
 int sockfd;
 char recv_buf[RECV_BUF_SIZE];
@@ -39,6 +39,14 @@ int channel_message_length(void)
   return (int)strtol(c_length, NULL, 10) - 1;
 }
 
+void channel_set_status(int value)
+{
+  char buf[9];
+  sprintf(buf, "%8u", value);
+  memcpy(channel_status, buf + 6, 2);
+
+  return;
+}
 void channel_from_cobol(void)
 {
   int message_length = channel_message_length();
@@ -67,13 +75,14 @@ void channel_string_to_cobol(const char *s)
 
 /*
  *         MOVE LENGTH OF MSG-BODY OF BUFFER TO MSG-LENGTH OF BUFFER.
- *         CALL "CHANNEL-INIT" USING BUFFER.
+ *         CALL "CHANNEL-INIT" USING BUFFER, STATE.
  */
-void CHANNEL__INIT(char *buffer)
+void CHANNEL__INIT(char *buffer, char *state)
 {
   msg_length = buffer;
   msg_body = BODY(buffer);
   msg_body_len = channel_message_length();
+  channel_status = state;
 
   return;
 }
@@ -82,14 +91,17 @@ void CHANNEL__INIT(char *buffer)
  *         STRING "HOST[:PORT]"
  *                INTO MSG-BODY
  *                WITH POINTER MSG-LENGTH.
- *         CALL "CHANNEL-OPEN" GIVING CHANNEL-STATUS.
+ *         CALL "CHANNEL-OPEN".
+ *
+ * Sets channel_status
  */
-int CHANNEL__OPEN(void)
+void CHANNEL__OPEN(void)
 {
   channel_from_cobol();
   if(!strlen(msg_body)) {
     channel_string_to_cobol("No host specified");
-    return EBADDEST;
+    channel_set_status(EBADDEST);
+    return;
  }
   char *port = strchr(msg_body, ':');
   if(port) {
@@ -97,7 +109,8 @@ int CHANNEL__OPEN(void)
     port++;
     if(!strlen(port)) {
       channel_string_to_cobol("Port separator specified, but not port");
-      return EBADDEST;
+      channel_set_status(EBADDEST);
+      return;
     }
   } else {
     port = DEFAULT_PORT;
@@ -111,7 +124,8 @@ int CHANNEL__OPEN(void)
   hints.ai_flags = AI_ADDRCONFIG;
   if((status = getaddrinfo(msg_body, port, &hints, &res))) {
     channel_string_to_cobol(gai_strerror(status));
-    return EBADDEST;
+    channel_set_status(EBADDEST);
+    return;
   }
 
   struct addrinfo *curr_addr;
@@ -132,13 +146,16 @@ int CHANNEL__OPEN(void)
   
   if(!curr_addr) {
     channel_string_to_cobol("Unable to connect to host");
-    return EOPENFAIL;
+    channel_set_status(EOPENFAIL);
+    return;
   }
 
-  return 0;
+  channel_set_status(0);
+  return;
 }
 
-int CHANNEL__SEND(void)
+// Sets channel_status
+void CHANNEL__SEND(void)
 {
   char *msg;
   int sent, total;
@@ -152,15 +169,18 @@ int CHANNEL__SEND(void)
       perror("send");
       close(sockfd);
       channel_string_to_cobol("Hung up");
-      return EHUP;
+      set_channel_status(EHUP);
+      return;
     }
     sent += status;
   }
 
-  return 0;
+  set_channel_status(0);
+  return;
 }
 
-int CHANNEL__RECV(void)
+// Sets channel_status
+void CHANNEL__RECV(void)
 {
   char *message_end;
  get_buffered:
@@ -169,7 +189,8 @@ int CHANNEL__RECV(void)
     size_t message_size = message_end - recv_buf;
     if (message_size > msg_body_len) {
       channel_string_to_cobol("Server sent too-long message");
-      return ESERV;
+      set_channel_status(ESERV);
+      return;
     }
     memcpy(msg_body, recv_buf, message_size);
     msg_body[message_size - 1] = '\0';
@@ -179,7 +200,8 @@ int CHANNEL__RECV(void)
       recv_buf[i] = message_end[i];
     }
     channel_to_cobol();
-    return 0;
+    set_channel_status(0);
+    return;
   }
   if(recv_buf_pos < RECV_BUF_SIZE - 1) {
     ssize_t received = recv(sockfd, recv_buf + recv_buf_pos, RECV_BUF_SIZE - recv_buf_pos, 0);
@@ -189,11 +211,13 @@ int CHANNEL__RECV(void)
     }
     perror("recv");
     channel_string_to_cobol("Hung up");
-    return EHUP;
+    set_channel_status(EHUP);
+    return;
   }
 
   channel_string_to_cobol("Server failed to send newline");
-  return ESERV;
+  set_channel_status(ESERV);
+  return;
 }
 
 void CHANNEL__CLOSE(void)
