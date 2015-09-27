@@ -42,7 +42,7 @@ int channel_message_length(void)
 void channel_set_status(int value)
 {
   char buf[9];
-  sprintf(buf, "%8u", value);
+  sprintf(buf, "%08u", value);
   memcpy(channel_status, buf + 6, 2);
 
   return;
@@ -169,13 +169,13 @@ void CHANNEL__SEND(void)
       perror("send");
       close(sockfd);
       channel_string_to_cobol("Hung up");
-      set_channel_status(EHUP);
+      channel_set_status(EHUP);
       return;
     }
     sent += status;
   }
 
-  set_channel_status(0);
+  channel_set_status(0);
   return;
 }
 
@@ -189,7 +189,7 @@ void CHANNEL__RECV(void)
     size_t message_size = message_end - recv_buf;
     if (message_size > msg_body_len) {
       channel_string_to_cobol("Server sent too-long message");
-      set_channel_status(ESERV);
+      channel_set_status(ESERV);
       return;
     }
     memcpy(msg_body, recv_buf, message_size);
@@ -200,7 +200,7 @@ void CHANNEL__RECV(void)
       recv_buf[i] = message_end[i];
     }
     channel_to_cobol();
-    set_channel_status(0);
+    channel_set_status(0);
     return;
   }
   if(recv_buf_pos < RECV_BUF_SIZE - 1) {
@@ -211,12 +211,12 @@ void CHANNEL__RECV(void)
     }
     perror("recv");
     channel_string_to_cobol("Hung up");
-    set_channel_status(EHUP);
+    channel_set_status(EHUP);
     return;
   }
 
   channel_string_to_cobol("Server failed to send newline");
-  set_channel_status(ESERV);
+  channel_set_status(ESERV);
   return;
 }
 

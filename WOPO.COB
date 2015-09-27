@@ -63,7 +63,7 @@
            CALL "PRINT-CONFIG".
            MOVE LENGTH OF MSG-BODY TO MSG-LENGTH.
            CALL "CHANNEL-INIT"
-               USING BUFFER.
+               USING BUFFER, STATE.
            OPEN INPUT CONFIG.
            MOVE "SERVER" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
@@ -72,7 +72,7 @@
                CONFIG-VALUE, DELIMITED BY SPACE,
                INTO MSG-BODY,
                WITH POINTER MSG-LENGTH.
-           CALL "CHANNEL-OPEN", GIVING STATE.
+           CALL "CHANNEL-OPEN".
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
            MOVE "PASS" TO CONFIG-KEY.
@@ -146,13 +146,13 @@
                            GO TO DIE.           
 
        SEND-LINE.
-           CALL "CHANNEL-SEND" GIVING STATE.
+           CALL "CHANNEL-SEND".
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
 
        RECEIVE-LINE.
            INITIALIZE MSG-BODY.
-           CALL "CHANNEL-RECV" GIVING STATE.
+           CALL "CHANNEL-RECV".
            IF NOT SUCCESS THEN GO TO DIE.
            CALL "IRC-MSG" USING BUFFER, IRC-MESSAGE.
 
