@@ -55,7 +55,6 @@
            03 WORK PIC X(50).
            03 WORK-PREFIX REDEFINES WORK PIC X.
                88 IS-COMMAND VALUE "$".
-               88 REST-PARAM VALUE ":".
            03 PARAM PIC X(50) OCCURS 5 TIMES.
 	   03 REG PIC X(50) OCCURS 5 TIMES.
 
@@ -168,8 +167,6 @@
                PARAM(4)
                PARAM(5).
            MOVE PARAM(1) TO WORK.
-           IF REST-PARAM THEN
-               UNSTRING WORK DELIMITED BY ":" INTO PARAM(1), PARAM(1).
 
        VALIDATE-USER.
            MOVE NICK TO USER-NAME.
@@ -267,7 +264,7 @@
 
        HANDLE-SOURCE.
            PERFORM BEGIN-REPLY.
-           STRING ":HTTPS://GITHUB.COM/HEDDWCH/WOPO"
+           STRING "HTTPS://GITHUB.COM/HEDDWCH/WOPO"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.

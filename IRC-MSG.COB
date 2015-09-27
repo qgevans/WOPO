@@ -3,7 +3,7 @@
 
        DATA DIVISION.
        WORKING-STORAGE SECTION.
-       01 PREFIX-WORK PIC X(96).
+       01 WORK PIC X(480).
        01 MSG-POINTER PIC 9(3).
 
        LINKAGE SECTION.
@@ -21,9 +21,11 @@
            03 PARAMETERS.
                05 TARGET PIC X(50).
                05 REST PIC X(480).
+	       05 REST-PREFIX REDEFINES REST PIC X.
+	           88 REST-PARAM VALUE ":".
 
        PROCEDURE DIVISION USING BUFFER, IRC-MESSAGE.
-           INITIALIZE IRC-MESSAGE, PREFIX-WORK, MSG-POINTER.
+           INITIALIZE IRC-MESSAGE, WORK, MSG-POINTER.
            IF HAS-PREFIX THEN
                PERFORM WITH-PREFIX
            ELSE
@@ -33,17 +35,22 @@
                INTO COMMAND, TARGET
                WITH POINTER MSG-POINTER.
            UNSTRING MSG-BODY,
-               DELIMITED BY "  ",
                INTO REST,
                WITH POINTER MSG-POINTER.
+	   IF REST-PARAM THEN
+	       MOVE REST TO WORK
+	       MOVE 2 TO MSG-POINTER
+	       UNSTRING WORK
+		 INTO REST
+		 WITH POINTER MSG-POINTER.
 
        WITH-PREFIX.
            MOVE 2 TO MSG-POINTER.
            UNSTRING MSG-BODY,
                DELIMITED BY SPACES,
-               INTO PREFIX-WORK,
+               INTO WORK,
                WITH POINTER MSG-POINTER.
-           UNSTRING PREFIX-WORK,
+           UNSTRING WORK,
                DELIMITED BY "!" OR "@",
                INTO NICK,
                     IDENT,
