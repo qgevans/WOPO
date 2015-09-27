@@ -207,6 +207,7 @@
 	   ELSE IF NOTICE THEN
 	       PERFORM HANDLE-MESSAGE.
 
+      *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
            INITIALIZE MSG-BODY.
            MOVE 1 TO MSG-LENGTH.
@@ -231,6 +232,13 @@
 	              ": " DELIMITED BY SIZE
 		      INTO MSG-BODY
 		      WITH POINTER MSG-LENGTH.
+
+       REPLY-ACK.
+           PERFORM BEGIN-REPLY.
+           STRING "OK."
+                  INTO MSG-BODY
+                  WITH POINTER MSG-LENGTH.
+           PERFORM SEND-LINE.
 
        PONG.
 	   STRING "PONG"
@@ -287,6 +295,10 @@
  
        HANDLE-JOIN.
            MOVE PARAM(2) TO REG(1).
+      *    PRESERVE VARIABLES FOR REPLY
+           MOVE NICK TO REG(2).
+           MOVE COMMAND TO REG(3).
+           MOVE TARGET TO REG(4).
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 THEN
                INITIALIZE MSG-BODY
@@ -294,14 +306,28 @@
                STRING "JOIN ", REG(1)
                       INTO MSG-BODY
                       WITH POINTER MSG-LENGTH
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+      *        RESTORE NICK AND TARGET, THEN REPLY.
+               MOVE REG(2) TO NICK
+               MOVE REG(3) TO COMMAND
+               MOVE REG(4) TO TARGET
+               PERFORM REPLY-ACK.
 
        HANDLE-PART.
            MOVE PARAM(2) TO REG(1).
+      *    PRESERVE VARIABLES FOR REPLY
+           MOVE NICK TO REG(2).
+           MOVE COMMAND TO REG(3).
+           MOVE TARGET TO REG(4).
            IF REG(1) EQUALS SPACES THEN
                MOVE TARGET TO REG(1).
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 THEN
+      *        RESTORE NICK AND TARGET, THEN REPLY.
+               MOVE REG(2) TO NICK
+               MOVE REG(3) TO COMMAND
+               MOVE REG(4) TO TARGET
+               PERFORM REPLY-ACK
                INITIALIZE MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "PART ", REG(1)
@@ -310,11 +336,20 @@
                PERFORM SEND-LINE.
 
        HANDLE-QUIT.
+      *    PRESERVE VARIABLES FOR REPLY
+           MOVE NICK TO REG(1).
+           MOVE COMMAND TO REG(2).
+           MOVE TARGET TO REG(3).
            MOVE "QUIT-MESSAGE" TO CONFIG-KEY.
            READ CONFIG RECORD
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 90 THEN
+      *        RESTORE NICK AND TARGET, THEN REPLY.
+               MOVE REG(1) TO NICK
+               MOVE REG(2) TO COMMAND
+               MOVE REG(3) TO TARGET
+               PERFORM REPLY-ACK
                INITIALIZE MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "QUIT :", CONFIG-VALUE
@@ -326,6 +361,10 @@
        HANDLE-RELEVEL.
            MOVE PARAM(2) TO REG(1).
            MOVE PARAM(3) TO REG(2).
+      *    PRESERVE VARIABLES FOR REPLY
+           MOVE NICK TO REG(3).
+           MOVE COMMAND TO REG(4).
+           MOVE TARGET TO REG(5).
            PERFORM VALIDATE-USER.
            MOVE REG(1) TO USER-NAME.
            IF USER-LEVEL IS EQUAL TO 99 THEN
@@ -334,8 +373,11 @@
 	           INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           INITIALIZE MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
+      *    RESTORE NICK AND TARGET, THEN REPLY.
+           MOVE REG(3) TO NICK.
+           MOVE REG(4) TO COMMAND.
+           MOVE REG(5) TO TARGET.
+           PERFORM BEGIN-REPLY.
            STRING USER-RECORD
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
