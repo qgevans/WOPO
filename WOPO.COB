@@ -350,7 +350,8 @@
            MOVE REG(1) TO USER-NAME.
            IF USER-LEVEL IS EQUAL TO 99 THEN
                MOVE REG(2) TO USER-LEVEL
-               WRITE USER-RECORD.
+               REWRITE USER-RECORD
+	           INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
            INITIALIZE MSG-BODY.
