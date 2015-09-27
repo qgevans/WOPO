@@ -171,7 +171,6 @@
            MOVE NICK TO USER-NAME.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-	   DISPLAY USER-RECORD.
            IF USER-LEVEL IS GREATER THAN 0 THEN
 	       INITIALIZE MSG-BODY
                MOVE 1 TO MSG-LENGTH
@@ -269,7 +268,13 @@
                INVALID KEY MOVE 0 TO USER-LEVEL.
            INITIALIZE MSG-BODY.
            MOVE 1 TO MSG-LENGTH.
-           STRING USER-RECORD
+           STRING "PRIVMSG " DELIMITED BY SIZE
+                  TARGET DELIMITED BY SPACE
+                  INTO MSG-BODY
+                  WITH POINTER MSG-LENGTH.
+           ADD 1 TO MSG-LENGTH
+           STRING ":"
+                  USER-RECORD
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
@@ -333,10 +338,12 @@
                GO TO QUIT.
 
        HANDLE-RELEVEL.
-           MOVE PARAM(2) TO USER-NAME.
-           MOVE PARAM(3) TO USER-LEVEL.
+           MOVE PARAM(2) TO REG(1).
+           MOVE PARAM(3) TO REG(2).
            PERFORM VALIDATE-USER.
+           MOVE REG(1) TO USER-NAME.
            IF USER-LEVEL IS EQUAL TO 99 THEN
+               MOVE REG(2) TO USER-LEVEL
                WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
