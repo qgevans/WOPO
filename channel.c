@@ -43,19 +43,12 @@ void channel_from_cobol(void)
 {
   int message_length = channel_message_length();
   memset(msg_body + message_length, 0, msg_body_len - message_length);
-  for(char *c = msg_body; *c; c++) {
-    *c = tolower(*c);
-  }
   return;
 }
 
 void channel_to_cobol(void)
 {
-  char *c;
-  for(c = msg_body; *c; c++) {
-    *c = toupper(*c);
-  }
-  memset(c, ' ', msg_body_len - strlen(msg_body));
+  memset(msg_body + strlen(msg_body), ' ', msg_body_len - strlen(msg_body));
 
   return;
 }

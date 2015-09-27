@@ -75,6 +75,17 @@
            CALL "CHANNEL-OPEN", GIVING STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
+           MOVE "PASS" TO CONFIG-KEY.
+           READ CONFIG RECORD
+               INVALID KEY MOVE SPACES TO CONFIG-VALUE.
+           IF CONFIG-VALUE IS NOT EQUAL TO SPACES THEN
+               INITIALIZE MSG-BODY
+               MOVE 1 TO MSG-LENGTH
+               STRING "PASS " DELIMITED BY SIZE,
+                      CONFIG-VALUE DELIMITED BY SPACE,
+                      INTO MSG-BODY
+                      WITH POINTER MSG-LENGTH
+               PERFORM SEND-LINE.
            MOVE "NICK" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
 	   MOVE CONFIG-VALUE TO WOPO-NICK.
@@ -107,17 +118,6 @@
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
-           MOVE "NICKSERV" TO CONFIG-KEY.
-           READ CONFIG RECORD
-               INVALID KEY MOVE SPACES TO CONFIG-KEY.
-           IF CONFIG-KEY IS NOT EQUAL TO SPACES THEN
-               INITIALIZE MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "PRIVMSG NICKSERV :IDENTIFY " DELIMITED BY SIZE,
-                      CONFIG-VALUE DELIMITED BY SPACE,
-                      INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
-               PERFORM SEND-LINE.
            OPEN INPUT CHANNELS.
            PERFORM AUTOJOIN-CHANNELS UNTIL DONE.
            CLOSE CHANNELS.
@@ -215,17 +215,22 @@
                   WITH POINTER MSG-LENGTH.
            ADD 1 TO MSG-LENGTH.
            IF TARGET IS EQUAL TO WOPO-NICK THEN
-               STRING NICK
+               STRING NICK DELIMITED BY SPACE
                       INTO MSG-BODY
                       WITH POINTER MSG-LENGTH
            ELSE
-               STRING TARGET
+               STRING TARGET DELIMITED BY SPACE
                       INTO MSG-BODY
                       WITH POINTER MSG-LENGTH.
            ADD 1 TO MSG-LENGTH.
            STRING ":"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
+           IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
+	       STRING NICK DELIMITED BY SPACES
+	              ": " DELIMITED BY SIZE
+		      INTO MSG-BODY
+		      WITH POINTER MSG-LENGTH.
 
        PONG.
 	   STRING "PONG"
@@ -244,8 +249,6 @@
                    PERFORM HANDLE-SOURCE
                ELSE IF PARAM(1) IS EQUAL TO "LEVEL" THEN
                    PERFORM HANDLE-LEVEL
-               ELSE IF PARAM(1) IS EQUAL TO "OP" THEN
-                   PERFORM HANDLE-OP
                ELSE IF PARAM(1) IS EQUAL TO "JOIN" THEN
                    PERFORM HANDLE-JOIN
                ELSE IF PARAM(1) IS EQUAL TO "PART" THEN
@@ -257,7 +260,7 @@
 
        HANDLE-HELP.
            PERFORM BEGIN-REPLY.
-           STRING "$HELP $LEVEL $OP $JOIN $PART $QUIT $RELEVEL"
+           STRING "$HELP $LEVEL $JOIN $PART $QUIT $RELEVEL $SOURCE "
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
@@ -282,26 +285,6 @@
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
  
-       HANDLE-OP.
-           MOVE TARGET TO REG(1).
-           MOVE PARAM(2) TO REG(2).
-           IF REG(2) IS EQUAL TO SPACES THEN
-               MOVE NICK TO REG(2).
-           PERFORM VALIDATE-USER.
-           IF USER-LEVEL IS GREATER THAN 50 THEN
-               INITIALIZE MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "MODE " DELIMITED BY SIZE,
-                      REG(1) DELIMITED BY SPACES
-                      INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
-               ADD 1 TO MSG-LENGTH
-               STRING "+O " DELIMITED BY SIZE,
-                      REG(2) DELIMITED BY SPACES
-                      INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
-               PERFORM SEND-LINE.
-
        HANDLE-JOIN.
            MOVE PARAM(2) TO REG(1).
            PERFORM VALIDATE-USER.
