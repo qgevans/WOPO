@@ -79,7 +79,7 @@
            READ CONFIG RECORD
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            IF CONFIG-VALUE IS NOT EQUAL TO SPACES THEN
-               INITIALIZE MSG-BODY
+               MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "PASS " DELIMITED BY SIZE,
                       CONFIG-VALUE DELIMITED BY SPACE,
@@ -90,7 +90,7 @@
            PERFORM READ-CONFIG-ENTRY.
 	   MOVE CONFIG-VALUE TO WOPO-NICK.
            MOVE 1 TO MSG-LENGTH.
-           INITIALIZE MSG-BODY.
+           MOVE SPACES TO MSG-BODY.
 	   STRING "NICK"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
@@ -100,7 +100,7 @@
                   WITH POINTER MSG-LENGTH.
 	   PERFORM SEND-LINE.
            MOVE 1 TO MSG-LENGTH.
-           INITIALIZE MSG-BODY.
+           MOVE SPACES TO MSG-BODY.
 	   STRING "USER"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
@@ -151,7 +151,7 @@
                                GO TO DIE.
 
        RECEIVE-LINE.
-           INITIALIZE MSG-BODY.
+           MOVE SPACES TO MSG-BODY.
            CALL "CHANNEL-RECV".
            IF NOT SUCCESS THEN GO TO DIE.
            CALL "IRC-MSG" USING BUFFER, IRC-MESSAGE.
@@ -173,7 +173,7 @@
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
            IF USER-LEVEL IS GREATER THAN 0 THEN
-	       INITIALIZE MSG-BODY
+	       MOVE SPACES TO MSG-BODY.
                MOVE 1 TO MSG-LENGTH
                STRING "PRIVMSG NICKSERV :ACC"
                       INTO MSG-BODY
@@ -195,7 +195,7 @@
                IF PARAM(3) IS NOT EQUAL TO "3" THEN
                    MOVE 0 TO USER-LEVEL
                ELSE NEXT SENTENCE
-           ELSE INITIALIZE COMMAND.
+           ELSE MOVE SPACES TO COMMAND.
 
        MAIN.
            PERFORM RECEIVE-LINE.
@@ -209,7 +209,7 @@
 
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
-           INITIALIZE MSG-BODY.
+           MOVE SPACES TO MSG-BODY.
            MOVE 1 TO MSG-LENGTH.
            STRING COMMAND
                   INTO MSG-BODY
@@ -301,7 +301,7 @@
            MOVE TARGET TO REG(4).
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 THEN
-               INITIALIZE MSG-BODY
+               MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "JOIN ", REG(1)
                       INTO MSG-BODY
@@ -328,7 +328,7 @@
                MOVE REG(3) TO COMMAND
                MOVE REG(4) TO TARGET
                PERFORM REPLY-ACK
-               INITIALIZE MSG-BODY
+               MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "PART ", REG(1)
                       INTO MSG-BODY
@@ -350,7 +350,7 @@
                MOVE REG(2) TO COMMAND
                MOVE REG(3) TO TARGET
                PERFORM REPLY-ACK
-               INITIALIZE MSG-BODY
+               MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "QUIT :", CONFIG-VALUE
                       INTO MSG-BODY
