@@ -40,7 +40,7 @@
                88 ASCII-US  VALUE 31.
       *        PRINTABLE CHARACTERS.
                88 ASCII-SPC  VALUE 32.
-               88 ASCII-EXC  VALUE 33.
+
                88 ASCII-DBQT VALUE 34.
                88 ASCII-PND  VALUE 35.
                88 ASCII-DLR  VALUE 36.
@@ -231,8 +231,6 @@
            MOVE "8" TO COBOL-STRING
        ELSE IF ASCII-NUM9 THEN
            MOVE "9" TO COBOL-STRING
-       ELSE IF ASCII-NUM0 THEN
-           MOVE "0" TO COBOL-STRING
        ELSE IF ASCII-COLN THEN
            MOVE "<COLN>" TO COBOL-STRING
        ELSE IF ASCII-SCLN THEN
