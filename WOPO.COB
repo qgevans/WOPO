@@ -255,6 +255,8 @@
                    PERFORM HANDLE-HELP
                ELSE IF PARAM(1) IS EQUAL TO "SOURCE" THEN
                    PERFORM HANDLE-SOURCE
+               ELSE IF PARAM(1) IS EQUAL TO "SHITFED" THEN
+                   PERFORM HANDLE-SHITFED
                ELSE IF PARAM(1) IS EQUAL TO "LEVEL" THEN
                    PERFORM HANDLE-LEVEL
                ELSE IF PARAM(1) IS EQUAL TO "JOIN" THEN
@@ -268,7 +270,15 @@
 
        HANDLE-HELP.
            PERFORM BEGIN-REPLY.
-           STRING "$HELP $LEVEL $JOIN $PART $QUIT $RELEVEL $SOURCE "
+           STRING "$HELP $LEVEL $JOIN $PART $QUIT $RELEVEL $SHITFED "
+      -           "$SOURCE"
+                  INTO MSG-BODY
+                  WITH POINTER MSG-LENGTH.
+           PERFORM SEND-LINE.
+
+       HANDLE-SHITFED.
+           PERFORM BEGIN-REPLY.
+           STRING "LEAVE MY CASE ALONE, ASSHOLE."
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
