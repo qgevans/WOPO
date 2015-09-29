@@ -8,7 +8,7 @@
        LINKAGE SECTION.
        01 CONVERSION.
            03 CHAR-CODE PIC 999.
-           03 COBOL-STRING PIC X(4).
+           03 COBOL-STRING PIC X(5).
       *        CONTROL CHARACTERS.
                88 ASCII-NUL VALUE "NUL".
                88 ASCII-SOH VALUE "SOH".
@@ -323,4 +323,5 @@
        ELSE IF ASCII-DEL THEN
            MOVE 127 TO CHAR-CODE
        ELSE MOVE 0 TO CHAR-CODE.
+       MOVE SPACES TO COBOL-STRING.
        EXIT PROGRAM.
