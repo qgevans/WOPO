@@ -151,7 +151,6 @@
                             WITH POINTER IN-PTR
                ELSE GO TO HELL
            ELSE GO TO HELL.
-           
            CALL "ENCODE-ASCII" USING CONVERSION.
            MOVE CHAR-CODE TO BF-CELL(CURRENT-CELL).
       D    DISPLAY "IN", I-O-CHARACTER, BF-CELL(CURRENT-CELL).
