@@ -454,13 +454,21 @@
        HANDLE-BF-INPUT.
            IF PARAM(2) IS EQUAL TO SPACES THEN
                PERFORM BEGIN-REPLY
-               STRING "INPUT. " DELIMITED BY SIZE,
-                      BF-INPUT DELIMITED BY "   "
+               STRING "INPUT. ",
+                      BF-INPUT
                       INTO MSG-BODY
                       WITH POINTER MSG-LENGTH
+      D        DISPLAY "INPUT. ", BF-INPUT
+      D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
            ELSE
-               MOVE PARAM(2) TO REG(1)
+               MOVE 1 TO MSG-LENGTH
+               UNSTRING REST DELIMITED BY SPACE
+                           INTO PARAM(1)
+                           WITH POINTER MSG-LENGTH
+               UNSTRING REST
+                        INTO REG(1)
+                        WITH POINTER MSG-LENGTH
       *        PRESERVE VARIABLES FOR REPLY.
                MOVE NICK TO REG(2)
                MOVE COMMAND TO REG(3)
@@ -471,12 +479,12 @@
                    MOVE REG(2) TO NICK
                    MOVE REG(3) TO COMMAND
                    MOVE REG(4) TO TARGET
-                   MOVE SPACES TO BF-INPUT
                    MOVE REG(1) TO BF-INPUT
                    PERFORM REPLY-ACK.
 
        HANDLE-BF-OUTPUT.
            PERFORM BEGIN-REPLY.
+      D    DISPLAY "BF OUTPUT. ", BF-OUTPUT.
       D    DISPLAY "STRINGING BF OUTPUT".
            STRING "OUTPUT. " DELIMITED BY SIZE,
                   BF-OUTPUT DELIMITED BY "$NUL$"
