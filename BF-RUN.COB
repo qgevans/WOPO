@@ -192,7 +192,7 @@
                        ADD 1 TO LOOP-WORK.
 
        UNREAD-INSTRUCTION.
-           IF IP IS GREATER THAN 1 THEN
+           IF IP IS GREATER THAN 3 THEN
                SUBTRACT 2 FROM IP
                UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP
            ELSE
