@@ -26,6 +26,7 @@
            88 BF-IN VALUE ",".
            88 BF-BEGIN VALUE "(".
            88 BF-END VALUE ")".
+	   88 BF-DIE VALUE "$".
        01 I-O-CHARACTER PIC X.
            88 ESCAPE-CHAR VALUE "$".
        01 CONVERSION.
@@ -64,7 +65,7 @@
            MOVE 0 TO BF-CELL(CURRENT-CELL).
 
        READ-INSTRUCTION.
-           IF IP IS LESS THAN 513 THEN
+           IF IP IS LESS THAN 512 THEN
                UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP
       D        DISPLAY CURRENT-INSTRUCTION
            ELSE
@@ -74,7 +75,9 @@
            MOVE 0 TO LOOP-STATE.
       D    DISPLAY IP, BF-CELL(CURRENT-CELL), LOOP-DEPTH, CYCLES.
            PERFORM READ-INSTRUCTION.
-           IF DONE THEN GO TO HELL.
+           IF DONE THEN
+      D        DISPLAY "GOING TO HELL"
+               GO TO HELL.
            IF BF-LEFT THEN
                PERFORM DO-LEFT
            ELSE IF BF-RIGHT THEN
@@ -90,7 +93,9 @@
            ELSE IF BF-BEGIN THEN
                PERFORM DO-BEGIN
            ELSE IF BF-END THEN
-               PERFORM DO-END.
+               PERFORM DO-END
+	   ELSE IF BF-DIE THEN
+	       GO TO HELL.
            ADD 1 TO CYCLES.
 
        DO-LEFT.
@@ -112,13 +117,19 @@
            ADD 1 TO BF-CELL(CURRENT-CELL).
 
        DO-OUT.
-           MOVE BF-CELL(CURRENT-CELL) TO CHAR-CODE.
-           CALL "DECODE-ASCII" USING CONVERSION.
-           STRING COBOL-STRING,
-                  DELIMITED BY SPACES,
-                  INTO BF-OUTPUT,
-                  WITH POINTER OUT-PTR.
-      D    DISPLAY "OUT", I-O-CHARACTER, BF-CELL(CURRENT-CELL).
+           IF OUT-PTR < 505 THEN
+               MOVE BF-CELL(CURRENT-CELL) TO CHAR-CODE
+               CALL "DECODE-ASCII" USING CONVERSION
+               IF COBOL-STRING IS EQUAL TO SPACES THEN
+	           ADD 1 TO OUT-PTR
+ 	       ELSE
+	           STRING COBOL-STRING,
+                   DELIMITED BY SPACES,
+                   INTO BF-OUTPUT,
+                   WITH POINTER OUT-PTR
+      D        DISPLAY "OUT", I-O-CHARACTER, BF-CELL(CURRENT-CELL)
+           ELSE
+               GO TO HELL.
 
        DO-IN.
            UNSTRING BF-INPUT,
@@ -126,18 +137,18 @@
                     WITH POINTER IN-PTR.
            IF NOT ESCAPE-CHAR THEN
                MOVE I-O-CHARACTER TO COBOL-STRING
-           ELSE
+           ELSE IF IN-PTR < 513 THEN
                UNSTRING BF-INPUT,
                         INTO I-O-CHARACTER,
                         WITH POINTER IN-PTR
                IF ESCAPE-CHAR THEN
                    MOVE I-O-CHARACTER TO COBOL-STRING
-               ELSE
-                   SUBTRACT 1 FROM IN-PTR
+               ELSE IF IN-PTR < 507 THEN
                    UNSTRING BF-INPUT,
                             DELIMITED BY "$",
                             INTO COBOL-STRING,
-                            WITH POINTER IN-PTR.
+                            WITH POINTER IN-PTR
+               ELSE GO TO HELL.
            CALL "ENCODE-ASCII" USING CONVERSION.
            MOVE CHAR-CODE TO BF-CELL(CURRENT-CELL).
       D    DISPLAY "IN", I-O-CHARACTER, BF-CELL(CURRENT-CELL).

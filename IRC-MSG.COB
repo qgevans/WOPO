@@ -11,7 +11,7 @@
            03 MSG-LENGTH PIC 9(3).
 	   03 MSG-BODY PIC X(512).
            03 MSG-BODY-1 REDEFINES MSG-BODY PIC X.
-               88 HAS-PREFIX VALUE ":".
+               88 HAS-PREFIX VALUE ";".
        01 IRC-MESSAGE.
            03 PREFIX.
                05 NICK PIC X(16).
@@ -22,7 +22,7 @@
                05 TARGET PIC X(50).
                05 REST PIC X(480).
 	       05 REST-PREFIX REDEFINES REST PIC X.
-	           88 REST-PARAM VALUE ":".
+	           88 REST-PARAM VALUE ";".
 
        PROCEDURE DIVISION USING BUFFER, IRC-MESSAGE.
            MOVE SPACES TO IRC-MESSAGE.

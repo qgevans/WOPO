@@ -50,7 +50,10 @@ void channel_set_status(int value)
 void channel_from_cobol(void)
 {
   int message_length = channel_message_length();
-  memset(msg_body + message_length, 0, msg_body_len - message_length);
+  memset(msg_body + message_length, 0, msg_body_len - message_length + 1);
+  for(char *c = msg_body; *c; c++) {
+    if(*c == ';') *c = ':';
+  }
   return;
 }
 
@@ -58,7 +61,8 @@ void channel_to_cobol(void)
 {
   char *c;
   for(c = msg_body; *c; c++) {
-    *c = toupper(*c);
+    if(isalpha(*c)) *c = toupper(*c);
+    if(*c == ':') *c = ';';
   }
   memset(c, ' ', msg_body_len - strlen(msg_body));
 
@@ -160,6 +164,9 @@ void CHANNEL__SEND(void)
   char *msg;
   int sent, total;
   channel_from_cobol();
+#ifdef DEBUG
+  printf("Sending: %s\n", msg_body);
+#endif
   sent = 0;
   total = strlen(msg_body);
   msg_body[total++] = '\n';
@@ -199,6 +206,9 @@ void CHANNEL__RECV(void)
     for(size_t i = 0; i < recv_buf_pos; i++) {
       recv_buf[i] = message_end[i];
     }
+#ifdef DEBUG
+    printf("Received: %s\n", msg_body);
+#endif
     channel_to_cobol();
     channel_set_status(0);
     return;
