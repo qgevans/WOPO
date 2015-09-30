@@ -50,6 +50,14 @@ void channel_set_status(int value)
 void channel_from_cobol(void)
 {
   int message_length = channel_message_length();
+  if (message_length == msg_body_len + 1) {
+    int i;
+    for(i = 0; i < msg_body_len; i++) {
+      if(msg_body[i] != ' ') {
+	message_length = i + 1;
+      }
+    }
+  }
   memset(msg_body + message_length, 0, msg_body_len - message_length + 1);
   for(char *c = msg_body; *c; c++) {
     if(*c == ';') *c = ':';

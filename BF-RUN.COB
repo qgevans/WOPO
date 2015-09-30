@@ -8,8 +8,8 @@
            03 IP PIC 9(3) VALUE 1.
            03 CYCLES PIC 9(5) VALUE 0.
            03 OUT-PTR PIC 9(3) VALUE 1.
-           03 LOOP-DEPTH PIC 9 VALUE 0.
-           03 LOOP-WORK PIC 9 VALUE 0.
+           03 LOOP-DEPTH PIC 99 VALUE 0.
+           03 LOOP-WORK PIC 99 VALUE 0.
            03 LOOP-STATE PIC 99 VALUE 0.
                88 DONE VALUE 99.
        01 BF-MEMORY.
@@ -144,11 +144,14 @@
                IF ESCAPE-CHAR THEN
                    MOVE I-O-CHARACTER TO COBOL-STRING
                ELSE IF IN-PTR < 507 THEN
+                   SUBTRACT 1 FROM IN-PTR
                    UNSTRING BF-INPUT,
                             DELIMITED BY "$",
                             INTO COBOL-STRING,
                             WITH POINTER IN-PTR
-               ELSE GO TO HELL.
+               ELSE GO TO HELL
+           ELSE GO TO HELL.
+           
            CALL "ENCODE-ASCII" USING CONVERSION.
            MOVE CHAR-CODE TO BF-CELL(CURRENT-CELL).
       D    DISPLAY "IN", I-O-CHARACTER, BF-CELL(CURRENT-CELL).

@@ -461,7 +461,7 @@
                PERFORM SEND-LINE
            ELSE
                MOVE PARAM(2) TO REG(1)
-      *        PRESERVE VARIABLES FOR REPL
+      *        PRESERVE VARIABLES FOR REPLY.
                MOVE NICK TO REG(2)
                MOVE COMMAND TO REG(3)
                MOVE TARGET TO REG(4)
@@ -479,7 +479,7 @@
            PERFORM BEGIN-REPLY.
       D    DISPLAY "STRINGING BF OUTPUT".
            STRING "OUTPUT. " DELIMITED BY SIZE,
-                  BF-OUTPUT DELIMITED BY "$LF$"
+                  BF-OUTPUT DELIMITED BY "$NUL$"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
       D    DISPLAY "SENDING LINE".
