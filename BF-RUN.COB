@@ -48,7 +48,7 @@
            MOVE 0 TO LOOP-DEPTH.
            MOVE 0 TO LOOP-WORK.
            MOVE 0 TO LOOP-STATE.
-           MOVE 0 TO BF-MEMORY.
+           MOVE SPACES TO BF-OUTPUT.
            SET CURRENT-CELL TO 1.
            PERFORM ZERO-CELL VARYING CURRENT-CELL
                              FROM 1 BY 1

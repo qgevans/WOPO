@@ -479,9 +479,7 @@
            PERFORM BEGIN-REPLY.
       D    DISPLAY "STRINGING BF OUTPUT".
            STRING "OUTPUT. " DELIMITED BY SIZE,
-                  BF-OUTPUT DELIMITED BY "$NUL$"
-                            DELIMITED BY "$LF$"
-                            DELIMITED BY "$SUB$"
+                  BF-OUTPUT DELIMITED BY "$LF$"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
       D    DISPLAY "SENDING LINE".
