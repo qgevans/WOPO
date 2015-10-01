@@ -53,7 +53,7 @@
                     INTO WORK,
                     WITH POINTER MSG-POINTER.
            UNSTRING WORK,
-                   DELIMITED BY "!" OR "@",
-                   INTO NICK,
-                   IDENT,
-                   HOST.
+                    DELIMITED BY "!" OR "@",
+                    INTO NICK,
+                    IDENT,
+                    HOST.
