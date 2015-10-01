@@ -44,6 +44,7 @@
                05 IDENT PIC X(16).
                05 HOST PIC X(64).
            03 COMMAND PIC X(16).
+               88 KICK VALUE "KICK".
                88 PING VALUE "PING".
                88 PRIVMSG VALUE "PRIVMSG".
                88 NOTICE VALUE "NOTICE".
@@ -227,7 +228,10 @@
                PERFORM HANDLE-MESSAGE
            ELSE IF NOTICE THEN
       D        DISPLAY "PROCESSING NOTICE"
-               PERFORM HANDLE-MESSAGE.
+               PERFORM HANDLE-MESSAGE
+           ELSE IF KICK THEN
+      D        DISPLAY "PROCESSING KICK"
+               PERFORM HANDLE-KICK.
 
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
@@ -269,6 +273,37 @@
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
+
+       HANDLE-KICK.
+           PERFORM GET-PARAMS.
+           IF PARAM(1) IS EQUAL TO WOPO-NICK THEN
+               MOVE SPACES TO MSG-BODY
+               MOVE 1 TO MSG-LENGTH
+               STRING "JOIN " DELIMITED BY SIZE,
+                      TARGET DELIMITED BY SPACES
+                      INTO MSG-BODY
+                      WITH POINTER MSG-LENGTH
+               PERFORM SEND-LINE
+               MOVE 1 TO MSG-LENGTH
+               UNSTRING REST DELIMITED BY ";"
+                        INTO WORK
+                        WITH POINTER MSG-LENGTH
+               UNSTRING REST
+                        INTO WORK
+                        WITH POINTER MSG-LENGTH
+               IF WORK IS NOT EQUAL TO WOPO-NICK THEN
+                   MOVE SPACES TO MSG-BODY
+                   MOVE 1 TO MSG-LENGTH
+                   STRING "PRIVMSG " DELIMITED BY SIZE,
+                          TARGET DELIMITED BY SPACES,
+                          " :" DELIMITED BY SIZE,
+                          NICK DELIMITED BY SPACES,
+                          ". " DELIMITED BY SIZE,
+                          WORK
+                          INTO MSG-BODY
+                          WITH POINTER MSG-LENGTH
+                   MOVE 513 TO MSG-LENGTH
+                   PERFORM SEND-LINE.
 
        HANDLE-MESSAGE.
            PERFORM GET-PARAMS.
