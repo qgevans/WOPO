@@ -26,7 +26,7 @@
            88 BF-IN VALUE ",".
            88 BF-BEGIN VALUE "(".
            88 BF-END VALUE ")".
-	   88 BF-DIE VALUE "$".
+           88 BF-DIE VALUE "$".
        01 I-O-CHARACTER PIC X.
            88 ESCAPE-CHAR VALUE "$".
        01 CONVERSION.
@@ -121,7 +121,7 @@
                PERFORM DO-END
                MOVE 99 TO LOOP-STATE
            ELSE IF BF-DIE AND NOT DONE THEN
-	       GO TO HELL.
+               GO TO HELL.
            ADD 1 TO CYCLES.
 
        DO-LEFT.
@@ -161,13 +161,13 @@
                MOVE BF-CELL(CURRENT-CELL) TO CHAR-CODE
                CALL "DECODE-ASCII" USING CONVERSION
                IF COBOL-STRING IS EQUAL TO SPACES THEN
-	           ADD 1 TO OUT-PTR
- 	       ELSE
-	           STRING COBOL-STRING,
-                   DELIMITED BY SPACES,
-                   INTO BF-OUTPUT,
-                   WITH POINTER OUT-PTR
-      D        DISPLAY "OUT", I-O-CHARACTER, BF-CELL(CURRENT-CELL)
+                   ADD 1 TO OUT-PTR
+               ELSE
+                   STRING COBOL-STRING,
+                          DELIMITED BY SPACES,
+                          INTO BF-OUTPUT,
+                          WITH POINTER OUT-PTR
+      D            DISPLAY "OUT", I-O-CHARACTER, BF-CELL(CURRENT-CELL)
            ELSE
                GO TO HELL.
            MOVE 99 TO LOOP-STATE.
