@@ -381,7 +381,8 @@
            MOVE COMMAND TO REG(3).
            MOVE TARGET TO REG(4).
            PERFORM VALIDATE-USER.
-           IF USER-LEVEL IS GREATER THAN 80 THEN
+           IF USER-LEVEL IS GREATER THAN 80 AND
+              REG(1) IS NOT EQUAL TO "0" THEN
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "JOIN ", REG(1)
