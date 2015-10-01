@@ -44,9 +44,9 @@
                05 IDENT PIC X(16).
                05 HOST PIC X(64).
            03 COMMAND PIC X(16).
-	       88 PING VALUE "PING".
-	       88 PRIVMSG VALUE "PRIVMSG".
-	       88 NOTICE VALUE "NOTICE".
+               88 PING VALUE "PING".
+               88 PRIVMSG VALUE "PRIVMSG".
+               88 NOTICE VALUE "NOTICE".
            03 PARAMETERS.
                05 TARGET PIC X(50).
                05 REST PIC X(480).
@@ -56,7 +56,7 @@
            03 WORK-PREFIX REDEFINES WORK PIC X.
                88 IS-COMMAND VALUE "$".
            03 PARAM PIC X(480) OCCURS 5 TIMES.
-	   03 REG PIC X(480) OCCURS 5 TIMES.
+           03 REG PIC X(480) OCCURS 5 TIMES.
 
        01 BF-I-O.
            03 BF-INPUT PIC X(512)
@@ -102,20 +102,20 @@
                PERFORM SEND-LINE.
            MOVE "NICK" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
-	   MOVE CONFIG-VALUE TO WOPO-NICK.
+           MOVE CONFIG-VALUE TO WOPO-NICK.
            MOVE 1 TO MSG-LENGTH.
            MOVE SPACES TO MSG-BODY.
-	   STRING "NICK"
+           STRING "NICK"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            ADD 1 TO MSG-LENGTH.
            STRING WOPO-NICK DELIMITED BY SPACE,
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
-	   PERFORM SEND-LINE.
+           PERFORM SEND-LINE.
            MOVE 1 TO MSG-LENGTH.
            MOVE SPACES TO MSG-BODY.
-	   STRING "USER"
+           STRING "USER"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            ADD 1 TO MSG-LENGTH.
@@ -151,7 +151,7 @@
                       CHANNEL-NAME DELIMITED BY SPACES,
                       INTO MSG-BODY
                       WITH POINTER MSG-LENGTH
-	   PERFORM SEND-LINE.
+               PERFORM SEND-LINE.
 
        READ-CONFIG-ENTRY.
            READ CONFIG RECORD
@@ -159,7 +159,7 @@
                            DISPLAY CONFIG-KEY
                            GO TO DIE.           
 
-       SEND-LINE.
+           SEND-LINE.
            CALL "CHANNEL-SEND".
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
@@ -186,10 +186,10 @@
       D    DISPLAY "ENTERED VALIDATE-USER".
            MOVE NICK TO USER-NAME.
            READ USERS RECORD
-               INVALID KEY MOVE 0 TO USER-LEVEL.
+                INVALID KEY MOVE 0 TO USER-LEVEL.
       D    DISPLAY "SUPPOSED USER LEVEL ", USER-LEVEL.
            IF USER-LEVEL IS GREATER THAN 0 THEN
-	       MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY
                MOVE 1 TO MSG-LENGTH
                STRING "PRIVMSG NICKSERV ;ACC"
                       INTO MSG-BODY
@@ -225,9 +225,9 @@
            ELSE IF PRIVMSG THEN
       D        DISPLAY "PROCESSING PRIVMSG"
                PERFORM HANDLE-MESSAGE
-	   ELSE IF NOTICE THEN
+           ELSE IF NOTICE THEN
       D        DISPLAY "PROCESSING NOTICE"
-	       PERFORM HANDLE-MESSAGE.
+               PERFORM HANDLE-MESSAGE.
 
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
@@ -250,10 +250,10 @@
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
-	       STRING NICK DELIMITED BY SPACES
-	              ". " DELIMITED BY SIZE
-		      INTO MSG-BODY
-		      WITH POINTER MSG-LENGTH.
+               STRING NICK DELIMITED BY SPACES
+                     ". " DELIMITED BY SIZE
+                     INTO MSG-BODY
+                     WITH POINTER MSG-LENGTH.
 
        REPLY-ACK.
            PERFORM BEGIN-REPLY.
@@ -263,7 +263,9 @@
            PERFORM SEND-LINE.
 
        PONG.
-	   STRING "PONG"
+           MOVE SPACES TO MSG-BODY.
+           MOVE 1 TO MSG-LENGTH.
+           STRING "PONG"
                   INTO MSG-BODY
                   WITH POINTER MSG-LENGTH.
            PERFORM SEND-LINE.
@@ -414,7 +416,7 @@
            IF USER-LEVEL IS EQUAL TO 99 THEN
                MOVE REG(2) TO USER-LEVEL
                REWRITE USER-RECORD
-	           INVALID KEY WRITE USER-RECORD.
+                   INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
       *    RESTORE NICK AND TARGET, THEN REPLY.
@@ -464,8 +466,8 @@
            ELSE
                MOVE 1 TO MSG-LENGTH
                UNSTRING REST DELIMITED BY SPACE
-                           INTO PARAM(1)
-                           WITH POINTER MSG-LENGTH
+                             INTO PARAM(1)
+                             WITH POINTER MSG-LENGTH
                UNSTRING REST
                         INTO REG(1)
                         WITH POINTER MSG-LENGTH
@@ -505,8 +507,7 @@
            IF REG(1) IS EQUAL TO SPACES THEN
                MOVE 999 TO MAYBE-CYCLE-LIMIT
            ELSE
-               UNSTRING REG(1) INTO
-                        MAYBE-CYCLE-LIMIT.
+               UNSTRING REG(1) INTO MAYBE-CYCLE-LIMIT.
       D    DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT.
       *    RESTORE NICK AND TARGET, THEN REPLY.
            MOVE REG(2) TO NICK
