@@ -160,6 +160,13 @@ void CHANNEL__SEND(char *cobol_buffer, char *state)
 #endif
   sent = 0;
   total = strlen(msg_buf);
+  if(msg_buf[total - 2] != '\n') {
+    if(total < BUFFER_SIZE) {
+      total++;
+    }
+    msg_buf[total - 2] = '\n';
+    msg_buf[total - 1] = '\0';
+  }
   while(sent < total) {
     int status = send(sockfd, msg_buf + sent, total - sent, 0);
  if(status == -1) {
