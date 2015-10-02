@@ -1,0 +1,38 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. "DECODE-STRING".
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 STATE.
+           03 LOOP-STATE PIC 99.
+               88 DONE VALUE 99.
+           03 STRING-POINTER PIC 999 USAGE COMPUTATIONAL.
+           03 TABLE-INDEX USAGE INDEX.
+
+       01 ASCII-CHARACTER.
+           03 CHAR-CODE PIC 999.
+           03 COBOL-STRING PIC X(6).
+
+       LINKAGE SECTION.
+       01 ASCII-STRING.
+           03 MSG-BODY PIC X(999).
+           03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
+
+       PROCEDURE DIVISION USING ASCII-STRING.
+           MOVE 0 TO LOOP-STATE.
+           MOVE 1 TO STRING-POINTER.
+           PERFORM DECODE-CHARACTER VARYING TABLE-INDEX
+                                    FROM 1, BY 1,
+                                    UNTIL DONE.
+           EXIT PROGRAM.
+
+       DECODE-CHARACTER.
+           MOVE ASCII-TABLE(TABLE-INDEX) TO CHAR-CODE
+           IF STRING-POINTER IS GREATER THAN OR EQUAL TO 999 THEN
+               MOVE 99 TO LOOP-STATE
+           ELSE
+               STRING COBOL-STRING DELIMITED BY SPACES
+                      INTO MSG-BODY
+                      WITH POINTER STRING-POINTER.
+               
+               

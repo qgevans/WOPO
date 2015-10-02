@@ -1,0 +1,52 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. "ENCODE-STRING".
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 STATE.
+           03 LOOP-STATE PIC 99.
+               88 DONE VALUE 99.
+           03 STRING-POINTER PIC 999 USAGE COMPUTATIONAL.
+           03 TABLE-INDEX USAGE INDEX.
+
+       01 ASCII-CHARACTER.
+           03 CHAR-CODE PIC 999.
+           03 COBOL-STRING PIC X(6).
+           03 CURRENT-CHARACTER REDEFINES COBOL-STRING PIC X.
+               88 ESCAPE-CHAR VALUE "$".
+
+       LINKAGE SECTION.
+       01 ASCII-STRING.
+           03 MSG-BODY PIC X(999).
+           03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
+
+       PROCEDURE DIVISION USING ASCII-STRING.
+           MOVE 0 TO LOOP-STATE, STRING-POINTER.
+           PERFORM ENCODE-CHARACTER
+                   VARYING TABLE-INDEX FROM 1, BY 1
+                   UNTIL DONE.
+           EXIT PROGRAM.
+
+       ENCODE-CHARACTER.
+           MOVE SPACES TO COBOL-STRING.
+           UNSTRING MSG-BODY
+                    INTO CURRENT-CHARACTER
+                    WITH POINTER STRING-POINTER.
+           IF ESCAPE-CHAR THEN
+               MOVE SPACES TO COBOL-STRING
+               IF STRING-POINTER < 993 THEN
+                   UNSTRING MSG-BODY DELIMITED BY "$"
+                            INTO COBOL-STRING
+                            WITH POINTER STRING-POINTER
+                   IF COBOL-STRING IS EQUAL TO SPACES THEN
+                       MOVE "$" TO COBOL-STRING
+                   ELSE
+                       NEXT SENTENCE
+               ELSE
+                   MOVE "NUL" TO COBOL-STRING.
+           IF COBOL-STRING IS EQUAL TO "NUL" THEN
+               MOVE 99 TO LOOP-STATE.
+           IF TABLE-INDEX IS GREATER THAN 998 THEN
+               MOVE 99 TO LOOP-STATE.
+           CALL "ENCODE-ASCII" USING ASCII-STRING.
+           MOVE CHAR-CODE TO ASCII-TABLE(TABLE-INDEX).

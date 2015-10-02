@@ -33,7 +33,7 @@
        01 STATE PIC 9(2).
            88 SUCCESS VALUE 0.
            88 DONE VALUE 99.
-       01 BUFFER.
+       01 ASCII-MSG.
            03 MSG-BODY PIC X(999).
            03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
        01 WOPO.
@@ -55,9 +55,9 @@
 
        01 PARAMS.
            03 WORK PIC X(480).
-           03 WORK-PTR PIC 999 USAGE COMPUTATION.
            03 WORK-PREFIX REDEFINES WORK PIC X.
                88 IS-COMMAND VALUE "$".
+           03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 REG PIC X(480) OCCURS 5 TIMES.
 
@@ -85,7 +85,8 @@
                CONFIG-VALUE, DELIMITED BY SPACE,
                "$NUL$"
                INTO MSG-BODY,
-           CALL "CHANNEL-OPEN" USING MSG-BODY, STATE.
+           CALL "ENCODE-STRING" USING ASCII-MSG.
+           CALL "CHANNEL-OPEN" USING ASCII-MSG, STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
            MOVE "PASS" TO CONFIG-KEY.
@@ -151,12 +152,14 @@
                            GO TO DIE.           
 
        SEND-LINE.
-           CALL "CHANNEL-SEND" USING MSG-BODY, STATE.
+           CALL "ENCODE-STRING" USING ASCII-MSG
+           CALL "CHANNEL-SEND" USING ASCII-MSG, STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
 
        RECEIVE-LINE.
-           CALL "CHANNEL-RECV" USING MSG-BODY, STATE.
+           CALL "CHANNEL-RECV" USING ASCII-MSG, STATE.
+           CALL "DECODE-STRING" USING ASCII-MSG
            IF NOT SUCCESS THEN GO TO DIE.
            CALL "IRC-MSG" USING MSG-BODY, IRC-MESSAGE.
 
@@ -482,7 +485,7 @@
                UNSTRING REST DELIMITED BY SPACE
                              INTO PARAM(1),
                              WITH POINTER WORK-PTR
-               UNSTRING REST DELIMITED BY SIZE
+               UNSTRING REST
                         INTO REG(1)
                         WITH POINTER WORK-PTR
       *        PRESERVE VARIABLES FOR REPLY.
