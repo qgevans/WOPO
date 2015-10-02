@@ -34,8 +34,8 @@
            88 SUCCESS VALUE 0.
            88 DONE VALUE 99.
        01 BUFFER.
-           03 MSG-LENGTH PIC 9(3).
-           03 MSG-BODY PIC X(512).
+           03 MSG-BODY PIC X(999).
+           03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
        01 WOPO.
            03 WOPO-NICK PIC X(16).
        01 IRC-MESSAGE.
@@ -52,8 +52,10 @@
                05 TARGET PIC X(50).
                05 REST PIC X(480).
        01 WAITING-COMMAND PIC X(16).
+
        01 PARAMS.
            03 WORK PIC X(480).
+           03 WORK-PTR PIC 999 USAGE COMPUTATION.
            03 WORK-PREFIX REDEFINES WORK PIC X.
                88 IS-COMMAND VALUE "$".
            03 PARAM PIC X(480) OCCURS 5 TIMES.
@@ -76,62 +78,51 @@
        PROCEDURE DIVISION.
            DISPLAY "CONFIGURATION FOLLOWS.".
            CALL "PRINT-CONFIG".
-           MOVE LENGTH OF MSG-BODY TO MSG-LENGTH.
-           CALL "CHANNEL-INIT"
-               USING BUFFER, STATE.
            OPEN INPUT CONFIG.
            MOVE "SERVER" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
-           MOVE 1 TO MSG-LENGTH.
            STRING
                CONFIG-VALUE, DELIMITED BY SPACE,
+               "$NUL$"
                INTO MSG-BODY,
-               WITH POINTER MSG-LENGTH.
-           CALL "CHANNEL-OPEN".
+           CALL "CHANNEL-OPEN" USING MSG-BODY, STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
            MOVE "PASS" TO CONFIG-KEY.
            READ CONFIG RECORD
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            IF CONFIG-VALUE IS NOT EQUAL TO SPACES THEN
-               MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
                STRING "PASS " DELIMITED BY SIZE,
                       CONFIG-VALUE DELIMITED BY SPACE,
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE.
            MOVE "NICK" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            MOVE CONFIG-VALUE TO WOPO-NICK.
-           MOVE 1 TO MSG-LENGTH.
            MOVE SPACES TO MSG-BODY.
-           STRING "NICK"
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
-           STRING WOPO-NICK DELIMITED BY SPACE,
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+           STRING "NICK " DELIMITED BY SIZE,
+                  WOPO-NICK DELIMITED BY SPACES,
+                  "$NUL$"
+                  INTO MSG-BODY.
            PERFORM SEND-LINE.
-           MOVE 1 TO MSG-LENGTH.
            MOVE SPACES TO MSG-BODY.
-           STRING "USER"
+           MOVE 1 TO WORK-PTR.
+           STRING "USER " DELIMITED BY SIZE
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            MOVE "IDENT" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            STRING CONFIG-VALUE DELIMITED BY SPACE,
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
+           ADD 1 TO WORK-PTR.
            MOVE "REAL-NAME" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
-           STRING "BOGUS HOST; " DELIMITED BY SIZE,
+           STRING "BOGUS HOST $COLN$" DELIMITED BY SIZE,
                   CONFIG-VALUE DELIMITED BY "  ",
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
            OPEN INPUT CHANNELS.
            PERFORM AUTOJOIN-CHANNELS UNTIL DONE.
@@ -147,11 +138,10 @@
            READ CHANNELS RECORD
                AT END MOVE 99 TO STATE.
            IF NOT DONE THEN
-               MOVE 1 TO MSG-LENGTH
                STRING "JOIN " DELIMITED BY SIZE,
                       CHANNEL-NAME DELIMITED BY SPACES,
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE.
 
        READ-CONFIG-ENTRY.
@@ -160,16 +150,15 @@
                            DISPLAY CONFIG-KEY
                            GO TO DIE.           
 
-           SEND-LINE.
-           CALL "CHANNEL-SEND".
+       SEND-LINE.
+           CALL "CHANNEL-SEND" USING MSG-BODY, STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
 
        RECEIVE-LINE.
-           MOVE SPACES TO MSG-BODY.
-           CALL "CHANNEL-RECV".
+           CALL "CHANNEL-RECV" USING MSG-BODY, STATE.
            IF NOT SUCCESS THEN GO TO DIE.
-           CALL "IRC-MSG" USING BUFFER, IRC-MESSAGE.
+           CALL "IRC-MSG" USING MSG-BODY, IRC-MESSAGE.
 
        WAIT-FOR-COMMAND.
            PERFORM RECEIVE-LINE UNTIL COMMAND EQUALS WAITING-COMMAND.
@@ -191,14 +180,10 @@
       D    DISPLAY "SUPPOSED USER LEVEL ", USER-LEVEL.
            IF USER-LEVEL IS GREATER THAN 0 THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "PRIVMSG NICKSERV ;ACC"
+               STRING "PRIVMSG NICKSERV $COLN$ ACC " DELIMITED BY SIZE
+                      NICK DELIMITED BY SPACE
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
-               ADD 1 TO MSG-LENGTH
-               STRING NICK
-                      INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE
                MOVE "NOTICE" TO WAITING-COMMAND
                MOVE 0 TO STATE
@@ -236,81 +221,75 @@
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
            MOVE SPACES TO MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
-           STRING COMMAND
+           MOVE 1 TO WORK-PTR.
+           STRING COMMAND DELIMITED BY SPACES
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
+           ADD 1 TO WORK-PTR.
            IF TARGET IS EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACE
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
+                      WITH POINTER WORK-PTR
            ELSE
                STRING TARGET DELIMITED BY SPACE
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH.
-           ADD 1 TO MSG-LENGTH.
-           STRING ";"
+                      WITH POINTER WORK-PTR.
+           ADD 1 TO WORK-PTR.
+           STRING "$COLN$"
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACES
                      ". " DELIMITED BY SIZE
                      INTO MSG-BODY
-                     WITH POINTER MSG-LENGTH.
+                     WITH POINTER WORK-PTR.
 
        REPLY-ACK.
            PERFORM BEGIN-REPLY.
-           STRING "OK."
+           STRING "OK.$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        PONG.
-           MOVE SPACES TO MSG-BODY.
-           MOVE 1 TO MSG-LENGTH.
-           STRING "PONG"
-                  INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+           STRING "PONG$NUL$"
+                  INTO MSG-BODY.
            PERFORM SEND-LINE.
 
        HANDLE-KICK.
            PERFORM GET-PARAMS.
            IF PARAM(1) IS EQUAL TO WOPO-NICK THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
                STRING "JOIN " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES
-                      INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
+                      "$NUL$"
+                     INTO MSG-BODY
                PERFORM SEND-LINE
-               MOVE 1 TO MSG-LENGTH
-               UNSTRING REST DELIMITED BY ";"
+               MOVE 1 TO WORK-PTR
+               UNSTRING REST DELIMITED BY "$COLN$"
                         INTO WORK
-                        WITH POINTER MSG-LENGTH
+                        WITH POINTER WORK-PTR
                UNSTRING REST
                         INTO WORK
-                        WITH POINTER MSG-LENGTH
+                        WITH POINTER WORK-PTR
                IF WORK IS NOT EQUAL TO WOPO-NICK THEN
                    MOVE SPACES TO MSG-BODY
-                   MOVE 1 TO MSG-LENGTH
                    STRING "PRIVMSG " DELIMITED BY SIZE,
                           TARGET DELIMITED BY SPACES,
-                          " :" DELIMITED BY SIZE,
+                          " $COLN$" DELIMITED BY SIZE,
                           NICK DELIMITED BY SPACES,
                           ". " DELIMITED BY SIZE,
-                          WORK
+                          WORK DELIMITED BY "$NUL$",
+                          "$NUL$"
                           INTO MSG-BODY
-                          WITH POINTER MSG-LENGTH
-                   MOVE 513 TO MSG-LENGTH
                    PERFORM SEND-LINE.
 
        HANDLE-MESSAGE.
            PERFORM GET-PARAMS.
            IF IS-COMMAND THEN
-               MOVE 2 TO MSG-LENGTH
+               MOVE 2 TO WORK-PTR
                UNSTRING WORK INTO PARAM(1)
-                             WITH POINTER MSG-LENGTH
+                             WITH POINTER WORK-PTR
       D        DISPLAY "COMMAND BODY ", PARAM(1)
                IF PARAM(1) IS EQUAL TO "HELP" THEN
                    PERFORM HANDLE-HELP
@@ -344,21 +323,21 @@
       -           "$HELP $LEVEL $JOIN $PART $QUIT $RELEVEL $SHITFED "
       -           "$SOURCE"
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-SHITFED.
            PERFORM BEGIN-REPLY.
            STRING "LEAVE MY CASE ALONE, ASSHOLE."
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-SOURCE.
            PERFORM BEGIN-REPLY.
-           STRING "HTTPS;//GITHUB.COM/HEDDWCH/WOPO"
+           STRING "HTTPS$COLN$//GITHUB.COM/HEDDWCH/WOPO"
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-LEVEL.
@@ -371,7 +350,7 @@
            PERFORM BEGIN-REPLY
            STRING USER-RECORD
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
  
        HANDLE-JOIN.
@@ -384,10 +363,10 @@
            IF USER-LEVEL IS GREATER THAN 80 AND
               REG(1) IS NOT EQUAL TO "0" THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "JOIN ", REG(1)
+               STRING "JOIN ", DELIMITED BY SIZE,
+                      REG(1), DELIMITED BY SPACES,
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE
       *        RESTORE NICK AND TARGET, THEN REPLY.
                MOVE REG(2) TO NICK
@@ -411,10 +390,10 @@
                MOVE REG(4) TO TARGET
                PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "PART ", REG(1)
+               STRING "PART " DELIMITED BY SIZE,
+                      REG(1) DELIMITED BY SPACES,
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE.
 
        HANDLE-QUIT.
@@ -433,10 +412,9 @@
                MOVE REG(3) TO TARGET
                PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO MSG-LENGTH
-               STRING "QUIT ;", CONFIG-VALUE
+               STRING "QUIT $COLN$" DELIMITED BY SIZE,
+                      CONFIG-VALUE,
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
                PERFORM SEND-LINE
                GO TO QUIT.
 
@@ -462,16 +440,17 @@
            PERFORM BEGIN-REPLY.
            STRING USER-RECORD
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-BF-CODE.
            IF PARAM(2) IS EQUAL TO SPACES THEN
                PERFORM BEGIN-REPLY
                STRING "CODE. " DELIMITED BY SIZE,
-                      BF-CODE DELIMITED BY "   "
+                      BF-CODE DELIMITED BY "   ",
+                      "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
+                      WITH POINTER WORK-PTR
                PERFORM SEND-LINE
            ELSE
                MOVE PARAM(2) TO REG(1)
@@ -495,18 +474,17 @@
                STRING "INPUT. ",
                       BF-INPUT
                       INTO MSG-BODY
-                      WITH POINTER MSG-LENGTH
       D        DISPLAY "INPUT. ", BF-INPUT
       D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
            ELSE
-               MOVE 1 TO MSG-LENGTH
+               MOVE 1 TO WORK-PTR
                UNSTRING REST DELIMITED BY SPACE
-                             INTO PARAM(1)
-                             WITH POINTER MSG-LENGTH
-               UNSTRING REST
+                             INTO PARAM(1),
+                             WITH POINTER WORK-PTR
+               UNSTRING REST DELIMITED BY SIZE
                         INTO REG(1)
-                        WITH POINTER MSG-LENGTH
+                        WITH POINTER WORK-PTR
       *        PRESERVE VARIABLES FOR REPLY.
                MOVE NICK TO REG(2)
                MOVE COMMAND TO REG(3)
@@ -527,7 +505,7 @@
            STRING "OUTPUT. " DELIMITED BY SIZE,
                   BF-OUTPUT DELIMITED BY "$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER MSG-LENGTH.
+                  WITH POINTER WORK-PTR.
       D    DISPLAY "SENDING LINE".
            PERFORM SEND-LINE.
       D    DISPLAY "SENT LINE".
@@ -550,7 +528,6 @@
            MOVE REG(3) TO COMMAND
            MOVE REG(4) TO TARGET
            IF USER-LEVEL > 50 THEN
-               MOVE 1 TO MSG-LENGTH
                PERFORM REPLY-ACK
                MOVE MAYBE-CYCLE-LIMIT TO CYCLE-LIMIT
                PERFORM BF-LIMIT-CYCLES
