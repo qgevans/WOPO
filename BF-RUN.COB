@@ -26,12 +26,15 @@
            88 BF-IN VALUE ",".
            88 BF-BEGIN VALUE "(".
            88 BF-END VALUE ")".
+           88 BF-ESCAPE VALUE "$".
            88 BF-DIE VALUE "$".
        01 I-O-CHARACTER PIC X.
            88 ESCAPE-CHAR VALUE "$".
-       01 CONVERSION.
+       01 ASCII-CHARACTER.
            03 CHAR-CODE PIC 999.
            03 COBOL-STRING PIC X(6).
+               88 LSQB VALUE "LSQB".
+               88 RSQB VALUE "RSQB".
       D01  DEBUG-DISPLAY.
       D    03 FILLER PIC XXX VALUE "IP.".
       D    03 DEBUG-IP PIC 9(3).
@@ -48,9 +51,9 @@
 
        LINKAGE SECTION.
        01 BF-I-O.
-           03 BF-INPUT PIC X(512).
-           03 BF-CODE PIC X(512).
-           03 BF-OUTPUT PIC X(512).
+           03 BF-INPUT PIC X(999).
+           03 BF-CODE PIC X(999).
+           03 BF-OUTPUT PIC X(999).
            03 CYCLE-LIMIT PIC 9(5).
 
        PROCEDURE DIVISION USING BF-I-O.
@@ -79,7 +82,7 @@
            MOVE 0 TO BF-CELL(CURRENT-CELL).
 
        READ-INSTRUCTION.
-           IF IP IS LESS THAN 512 THEN
+           IF IP IS LESS THAN 999 THEN
                UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP
            ELSE
                MOVE 99 TO LOOP-STATE.
@@ -96,6 +99,18 @@
            IF DONE THEN
       D        DISPLAY "GOING TO HELL"
                GO TO HELL.
+           IF BF-ESCAPE THEN
+              UNSTRING BF-CODE DELIMITED BY "$"
+                       INTO COBOL-STRING
+                       WITH POINTER IP
+              IF COBOL-STRING IS EQUAL TO SPACES THEN
+                  UNSTRING BF-CODE
+                           INTO CURRENT-INSTRUCTION
+                           WITH POINTER IP
+              ELSE IF LSQB THEN
+                  MOVE "(" TO CURRENT-INSTRUCTION
+              ELSE IF RSQB THEN
+                  MOVE ")" TO CURRENT-INSTRUCTION.
            IF BF-LEFT THEN
                PERFORM DO-LEFT
                MOVE 99 TO LOOP-STATE
@@ -120,7 +135,7 @@
            ELSE IF BF-END AND NOT DONE THEN
                PERFORM DO-END
                MOVE 99 TO LOOP-STATE
-           ELSE IF BF-DIE AND NOT DONE THEN
+           ELSE IF BF-DIE THEN
                GO TO HELL.
            ADD 1 TO CYCLES.
 
@@ -157,9 +172,9 @@
            MOVE 99 TO LOOP-STATE.
 
        DO-OUT.
-           IF OUT-PTR < 505 THEN
+           IF OUT-PTR < 999 THEN
                MOVE BF-CELL(CURRENT-CELL) TO CHAR-CODE
-               CALL "DECODE-ASCII" USING CONVERSION
+               CALL "DECODE-ASCII" USING ASCII-CHARACTER
                IF COBOL-STRING IS EQUAL TO SPACES THEN
                    ADD 1 TO OUT-PTR
                ELSE
@@ -178,13 +193,13 @@
                     WITH POINTER IN-PTR.
            IF NOT ESCAPE-CHAR THEN
                MOVE I-O-CHARACTER TO COBOL-STRING
-           ELSE IF IN-PTR < 513 THEN
+           ELSE IF IN-PTR < 999 THEN
                UNSTRING BF-INPUT,
                         INTO I-O-CHARACTER,
                         WITH POINTER IN-PTR
                IF ESCAPE-CHAR THEN
                    MOVE I-O-CHARACTER TO COBOL-STRING
-               ELSE IF IN-PTR < 507 THEN
+               ELSE IF IN-PTR < 996 THEN
                    SUBTRACT 1 FROM IN-PTR
                    UNSTRING BF-INPUT,
                             DELIMITED BY "$",
@@ -192,7 +207,7 @@
                             WITH POINTER IN-PTR
                ELSE GO TO HELL
            ELSE GO TO HELL.
-           CALL "ENCODE-ASCII" USING CONVERSION.
+           CALL "ENCODE-ASCII" USING ASCII-CHARACTER.
            MOVE CHAR-CODE TO BF-CELL(CURRENT-CELL).
       D    DISPLAY "IN", I-O-CHARACTER, BF-CELL(CURRENT-CELL).
            MOVE 99 TO LOOP-STATE.

@@ -60,11 +60,11 @@
            03 REG PIC X(480) OCCURS 5 TIMES.
 
        01 BF-I-O.
-           03 BF-INPUT PIC X(512)
+           03 BF-INPUT PIC X(999)
                VALUE "$NUL$".
-           03 BF-CODE PIC X(512)
-               VALUE ",(.,).$".
-           03 BF-OUTPUT PIC X(512)
+           03 BF-CODE PIC X(999)
+               VALUE ",(.,).$$".
+           03 BF-OUTPUT PIC X(999)
                VALUE SPACES.
            03 CYCLE-LIMIT PIC 9(5)
                VALUE 0.
