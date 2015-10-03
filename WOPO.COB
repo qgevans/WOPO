@@ -338,7 +338,7 @@
 
        HANDLE-SHITFED.
            PERFORM BEGIN-REPLY.
-           STRING "$002$LEAVE MY CASE ALONE, ASSHOLE."
+           STRING "$002$LEAVE MY CASE ALONE, ASSHOL$LOWE$."
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
