@@ -28,7 +28,7 @@ while true; do
     esac
 done
 if [ $BUILD_C ]; then
-    ${CC:-cc} ${DEBUG:+-DDEBUG} -o channel.o -c channel.c
+    ${CC:-cc} ${DEBUG:+-DDEBUG} -std=c11 -o channel.o -c channel.c
 fi
 if [ $BUILD_COBOL ]; then
     ${COBC:-cobc} ${DEBUG:+-fdebugging-line} -std=mvs -x WOPO-CNF.COB PRINTCNF.COB
