@@ -1,58 +1,75 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. "IRC-MSG".
+       PROGRAM-ID. "PARSE-IRC-MSG".
 
        DATA DIVISION.
        WORKING-STORAGE SECTION.
-       01 WORK PIC X(480).
-       01 MSG-POINTER PIC 9(3).
+       01 WORK-PARAMETER.
+           03 WORK PIC X(999).
+               88 BLANK-PARAM VALUE SPACES.
+           03 WORK-1 REDEFINES WORK PIC X(6).
+               88 REST-PARAMETER VALUE "$COLN$".
+           03 WORK-DELIM PIC X(6).
+               88 IDENT-SPEC VALUE "!".
+               88 HOST-SPEC VALUE "@".
+               88 END-PREFIX VALUE SPACES.
+       01 MSG-POINTER PIC 999.
+       01 LOOP-STATE PIC 99.
+           88 DONE VALUE 99.
 
        LINKAGE SECTION.
        01 BUFFER.
            03 MSG-BODY PIC X(999).
            03 MSG-BODY-1 REDEFINES MSG-BODY PIC X(6).
                88 HAS-PREFIX VALUE "$COLN$".
-       01 IRC-MESSAGE.
+       01 IRC-PARAMETERS.
+           03 NUM-PARAMETERS PIC 99.
            03 PREFIX.
-               05 NICK PIC X(16).
-               05 IDENT PIC X(16).
-               05 HOST PIC X(64).
-           03 COMMAND PIC X(16).
-           03 PARAMETERS.
-               05 TARGET PIC X(50).
-               05 REST PIC X(480).
-               05 REST-PREFIX REDEFINES REST PIC X(6).
-                   88 REST-PARAM VALUE "$COLN$".
+               05 MSG-SRC PIC 999.
+               05 IDENT PIC 999.
+               05 HOST PIC 999.
+           03 COMMAND PIC 999.
+           03 PARAMS.
+               05 PARAM PIC 999 OCCURS 15 TIMES.
 
-       PROCEDURE DIVISION USING BUFFER, IRC-MESSAGE.
-           MOVE SPACES TO IRC-MESSAGE.
+       PROCEDURE DIVISION USING BUFFER, IRC-PARAMETERS.
+           MOVE 0 TO LOOP-STATE.
+           MOVE 0 TO IRC-PARAMETERS.
            MOVE SPACES TO WORK.
            MOVE 1 TO MSG-POINTER.
            IF HAS-PREFIX THEN
                PERFORM WITH-PREFIX
            ELSE
                MOVE 1 TO MSG-POINTER.
-           UNSTRING MSG-BODY,
-               DELIMITED BY SPACES,
-               INTO COMMAND, TARGET
-               WITH POINTER MSG-POINTER.
-           UNSTRING MSG-BODY DELIMITED BY "$NUL$",
-               INTO REST,
-               WITH POINTER MSG-POINTER.
-           IF REST-PARAM THEN
-               MOVE REST TO WORK
-               MOVE 7 TO MSG-POINTER
-               UNSTRING WORK
-                        INTO REST
-                        WITH POINTER MSG-POINTER.
+           MOVE MSG-POINTER TO COMMAND.
+           UNSTRING MSG-BODY DELIMITED BY SPACES
+                    INTO WORK
+                    WITH POINTER MSG-POINTER.
+           PERFORM GET-PARAMETER
+                   VARYING NUM-PARAMETERS FROM 1, BY 1
+                   UNTIL DONE OR
+                         NUM-PARAMETERS IS GREATER THAN OR EQUAL TO 15.
+           EXIT PROGRAM.
+
+       GET-PARAMETER.
+           MOVE MSG-POINTER TO PARAM(NUM-PARAMETERS).
+           MOVE SPACES TO WORK.
+           UNSTRING MSG-BODY DELIMITED BY SPACES
+                    INTO WORK
+                    WITH POINTER MSG-POINTER.
+           IF BLANK-PARAM OR REST-PARAMETER THEN
+               MOVE 99 TO LOOP-STATE.
+           IF BLANK-PARAM THEN
+               SUBTRACT 1 FROM NUM-PARAMETERS.
 
        WITH-PREFIX.
-           MOVE 7 TO MSG-POINTER.
-           UNSTRING MSG-BODY,
-                    DELIMITED BY SPACES,
-                    INTO WORK,
-                    WITH POINTER MSG-POINTER.
+           MOVE 7 TO MSG-POINTER, MSG-SRC.
+           PERFORM GET-PREFIX-PART UNTIL END-PREFIX.
+           MOVE SPACES TO WORK-DELIM.
+
+       GET-PREFIX-PART.
            UNSTRING WORK,
-                    DELIMITED BY "$EXC$" OR "$AT$",
-                    INTO NICK,
-                    IDENT,
-                    HOST.
+                    DELIMITED BY "$EXC$", OR "$AT$", OR SPACES,
+                    INTO WORK, DELIMITER IN WORK-DELIM,
+                    WITH POINTER MSG-POINTER.
+           IF IDENT-SPEC THEN MOVE MSG-POINTER TO IDENT.
+           IF HOST-SPEC THEN MOVE MSG-POINTER TO HOST.
