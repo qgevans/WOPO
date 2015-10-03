@@ -32,6 +32,6 @@ if [ $BUILD_C ]; then
 fi
 if [ $BUILD_COBOL ]; then
     ${COBC:-cobc} ${DEBUG:+-fdebugging-line} -x WOPO-CNF.COB PRINTCNF.COB
-    ${COBC:-cobc} ${DEBUG:+-fdebugging-line} -x WOPO.COB IRC-MSG.COB PRINTCNF.COB DECASCII.COB ENCASCII.COB DECSTR.COB ENCSTR.COB BF-RUN.COB channel.o
+    ${COBC:-cobc} ${DEBUG:+-fdebugging-line} -A "-fbracket-depth=512" -x WOPO.COB IRC-MSG.COB PRINTCNF.COB DECASCII.COB ENCASCII.COB DECSTR.COB ENCSTR.COB BF-RUN.COB channel.o
 fi
 
