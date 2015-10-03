@@ -127,7 +127,11 @@ void CHANNEL__OPEN(char *cobol_buffer, char *state)
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
+#ifdef AI_ADDRCONFIG
   hints.ai_flags = AI_ADDRCONFIG;
+#else
+  hints.ai_flags = 0;
+#endif
   if((status = getaddrinfo(msg_buf, port, &hints, &res))) {
     channel_string_to_cobol(cobol_buffer, gai_strerror(status));
     channel_set_status(state, EBADDEST);
