@@ -47,8 +47,11 @@ void channel_from_cobol(char *cobol_buffer)
   memcpy(buf, cobol_buffer, CELL_DIGITS);
 
   int i;
-  for(i = 0; strcmp(buf, "000") && i < BUFFER_SIZE; memcpy(buf, cobol_buffer + ++i * CELL_DIGITS, CELL_DIGITS)) {
+  for(i = 0; i < BUFFER_SIZE; memcpy(buf, cobol_buffer + ++i * CELL_DIGITS, CELL_DIGITS)) {
     msg_buf[i] = (char)strtol(buf, NULL, 10);
+    if(!msg_buf[i]) {
+      break;
+    }
   }
   msg_buf[i] = '\0';
   if (i == BUFFER_SIZE) {
@@ -69,11 +72,16 @@ void channel_from_cobol(char *cobol_buffer)
 void channel_to_cobol(char *cobol_buffer)
 {
   char buf[CELL_DIGITS + 1];
-  for(int i = 0; i < BUFFER_SIZE && msg_buf[i]; i++) {
+  int i;
+  for(i = 0; i < BUFFER_SIZE - 1
+	         && msg_buf[i]
+	         && msg_buf[i] != '\n'
+	         && msg_buf[i] != '\r'
+	         && msg_buf[i]; i++) {
     snprintf(buf, CELL_DIGITS + 1, "%.*hhu", CELL_DIGITS, msg_buf[i]);
     memcpy(cobol_buffer + i * CELL_DIGITS, buf, CELL_DIGITS);
   }
-  memset(cobol_buffer + (BUFFER_SIZE - 1) * CELL_DIGITS, (int)'0', CELL_DIGITS);
+  memset(cobol_buffer + i * CELL_DIGITS, (int)'0', CELL_DIGITS);
 
   return;
 }
@@ -93,6 +101,9 @@ void channel_string_to_cobol(char *cobol_buffer, const char *s)
 void CHANNEL__OPEN(char *cobol_buffer, char *state)
 {
   channel_from_cobol(cobol_buffer);
+#ifdef DEBUG
+  printf("CHANNEL__OPEN: %s\n", msg_buf);
+#endif
   if(!strlen(msg_buf)) {
     channel_string_to_cobol(cobol_buffer, "No host specified");
     channel_set_status(state, EBADDEST);
@@ -156,17 +167,20 @@ void CHANNEL__SEND(char *cobol_buffer, char *state)
   int sent, total;
   channel_from_cobol(cobol_buffer);
 #ifdef DEBUG
-  printf("Sending: %s\n", msg_buf);
+  printf("Got from COBOL: %s\n", msg_buf);
 #endif
   sent = 0;
   total = strlen(msg_buf);
-  if(msg_buf[total - 2] != '\n') {
+  if(msg_buf[total - 1] != '\n') {
     if(total < BUFFER_SIZE) {
       total++;
     }
-    msg_buf[total - 2] = '\n';
-    msg_buf[total - 1] = '\0';
+    msg_buf[total - 1] = '\n';
+    msg_buf[total] = '\0';
   }
+#ifdef DEBUG
+  printf("Sending: %s\n", msg_buf);
+#endif
   while(sent < total) {
     int status = send(sockfd, msg_buf + sent, total - sent, 0);
  if(status == -1) {
@@ -208,6 +222,9 @@ void CHANNEL__RECV(char *cobol_buffer, char *state)
 #endif
     channel_to_cobol(cobol_buffer);
     channel_set_status(state, 0);
+#ifdef DEBUG
+    printf("Line converted to COBOL ASCII string.\n");
+#endif
     return;
   }
   if(recv_buf_pos < RECV_BUF_SIZE - 1) {
