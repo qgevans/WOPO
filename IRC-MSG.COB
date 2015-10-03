@@ -35,7 +35,7 @@
                DELIMITED BY SPACES,
                INTO COMMAND, TARGET
                WITH POINTER MSG-POINTER.
-           UNSTRING MSG-BODY,
+           UNSTRING MSG-BODY DELIMITED BY "$NUL$",
                INTO REST,
                WITH POINTER MSG-POINTER.
            IF REST-PARAM THEN

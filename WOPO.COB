@@ -35,7 +35,8 @@
            88 DONE VALUE 99.
        01 ASCII-MSG.
            03 MSG-BODY PIC X(999).
-           03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
+           03 ASCII-TABLE.
+               05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
        01 WOPO.
            03 WOPO-NICK PIC X(16).
        01 IRC-MESSAGE.
@@ -55,8 +56,8 @@
 
        01 PARAMS.
            03 WORK PIC X(480).
-           03 WORK-PREFIX REDEFINES WORK PIC X.
-               88 IS-COMMAND VALUE "$".
+           03 WORK-PREFIX REDEFINES WORK PIC XX.
+               88 IS-COMMAND VALUE "$$".
            03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 REG PIC X(480) OCCURS 5 TIMES.
@@ -86,7 +87,7 @@
                "$NUL$"
                INTO MSG-BODY,
            CALL "ENCODE-STRING" USING ASCII-MSG.
-           CALL "CHANNEL-OPEN" USING ASCII-MSG, STATE.
+           CALL "CHANNEL-OPEN" USING ASCII-TABLE, STATE.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
            MOVE "PASS" TO CONFIG-KEY.
@@ -152,15 +153,20 @@
                            GO TO DIE.           
 
        SEND-LINE.
-           CALL "ENCODE-STRING" USING ASCII-MSG
-           CALL "CHANNEL-SEND" USING ASCII-MSG, STATE.
-           IF NOT SUCCESS THEN DISPLAY MSG-BODY
+      D    DISPLAY "ENCODING TO ASCII. ", MSG-BODY.
+           CALL "ENCODE-STRING" USING ASCII-MSG.
+           CALL "CHANNEL-SEND" USING ASCII-TABLE, STATE.
+           IF NOT SUCCESS THEN CALL "DECODE-STRING" USING ASCII-MSG
+                               DISPLAY MSG-BODY
                                GO TO DIE.
 
        RECEIVE-LINE.
-           CALL "CHANNEL-RECV" USING ASCII-MSG, STATE.
-           CALL "DECODE-STRING" USING ASCII-MSG
-           IF NOT SUCCESS THEN GO TO DIE.
+           CALL "CHANNEL-RECV" USING ASCII-TABLE, STATE.
+      D    DISPLAY "RECEIVED LINE FROM CHANNEL".
+           MOVE SPACES TO MSG-BODY.
+           CALL "DECODE-STRING" USING ASCII-MSG.
+           IF NOT SUCCESS THEN DISPLAY MSG-BODY
+                               GO TO DIE.
            CALL "IRC-MSG" USING MSG-BODY, IRC-MESSAGE.
 
        WAIT-FOR-COMMAND.
@@ -290,7 +296,7 @@
        HANDLE-MESSAGE.
            PERFORM GET-PARAMS.
            IF IS-COMMAND THEN
-               MOVE 2 TO WORK-PTR
+               MOVE 3 TO WORK-PTR
                UNSTRING WORK INTO PARAM(1)
                              WITH POINTER WORK-PTR
       D        DISPLAY "COMMAND BODY ", PARAM(1)
@@ -322,16 +328,17 @@
 
        HANDLE-HELP.
            PERFORM BEGIN-REPLY.
-           STRING "$BF-INPUT $BF-CODE $BF-OUTPUT $BF-RUN "
-      -           "$HELP $LEVEL $JOIN $PART $QUIT $RELEVEL $SHITFED "
-      -           "$SOURCE"
+           STRING "$$BF-INPUT $$BF-CODE $$BF-OUTPUT $$BF-RUN "
+      -           "$$HELP $$LEVEL $$JOIN $$PART $$QUIT $$RELEVEL "
+      -           "$$SHITFED $$SOURCE"
+      -           "$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-SHITFED.
            PERFORM BEGIN-REPLY.
-           STRING "LEAVE MY CASE ALONE, ASSHOLE."
+           STRING "$002$LEAVE MY CASE ALONE, ASSHOLE."
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
@@ -450,10 +457,11 @@
            IF PARAM(2) IS EQUAL TO SPACES THEN
                PERFORM BEGIN-REPLY
                STRING "CODE. " DELIMITED BY SIZE,
-                      BF-CODE DELIMITED BY "   ",
-                      "$NUL$"
+                      BF-CODE DELIMITED BY "$$",
+                      "$NUL$" DELIMITED BY SIZE
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
+      D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
            ELSE
                MOVE PARAM(2) TO REG(1)
@@ -477,6 +485,7 @@
                STRING "INPUT. ",
                       BF-INPUT
                       INTO MSG-BODY
+                      WITH POINTER WORK-PTR
       D        DISPLAY "INPUT. ", BF-INPUT
       D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
