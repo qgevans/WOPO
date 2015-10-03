@@ -51,8 +51,8 @@
                88 ASCII-PCNT VALUE "PCNT".
                88 ASCII-AMP  VALUE "AMP".
                88 ASCII-SGQT VALUE "SGQT".
-               88 ASCII-LPRN VALUE "LPRN".
-               88 ASCII-RPRN VALUE "RPRN".
+               88 ASCII-LPRN VALUE "(".
+               88 ASCII-RPRN VALUE ")".
                88 ASCII-STAR VALUE "*".
                88 ASCII-PLUS VALUE "+".
                88 ASCII-COMA VALUE ",".

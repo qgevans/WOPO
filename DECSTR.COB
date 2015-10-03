@@ -16,23 +16,27 @@
        LINKAGE SECTION.
        01 ASCII-STRING.
            03 MSG-BODY PIC X(999).
-           03 ASCII-TABLE PIC 999 OCCURS 999 TIMES.
+           03 ASCII-TABLE.
+               05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
 
        PROCEDURE DIVISION USING ASCII-STRING.
            MOVE 0 TO LOOP-STATE.
            MOVE 1 TO STRING-POINTER.
+           MOVE SPACES TO MSG-BODY.
            PERFORM DECODE-CHARACTER VARYING TABLE-INDEX
                                     FROM 1, BY 1,
                                     UNTIL DONE.
            EXIT PROGRAM.
 
        DECODE-CHARACTER.
-           MOVE ASCII-TABLE(TABLE-INDEX) TO CHAR-CODE
+           MOVE ASCII-CELL(TABLE-INDEX) TO CHAR-CODE
            IF STRING-POINTER IS GREATER THAN OR EQUAL TO 999 THEN
                MOVE 99 TO LOOP-STATE
-           ELSE
-               STRING COBOL-STRING DELIMITED BY SPACES
-                      INTO MSG-BODY
-                      WITH POINTER STRING-POINTER.
-               
-               
+           ELSE IF NOT DONE THEN
+               CALL "DECODE-ASCII" USING ASCII-CHARACTER.
+               IF COBOL-STRING IS NOT EQUAL TO SPACES THEN
+                   STRING COBOL-STRING DELIMITED BY SPACES
+                          INTO MSG-BODY
+                          WITH POINTER STRING-POINTER
+               ELSE
+                   ADD 1 TO STRING-POINTER.
