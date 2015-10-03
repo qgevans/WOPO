@@ -5,14 +5,17 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT CONFIG
+               ASSIGN TO DISK
                ORGANIZATION IS INDEXED
                ACCESS MODE IS RANDOM
                RECORD KEY IS CONFIG-KEY.
            SELECT USERS
+               ASSIGN TO DISK
                ORGANIZATION IS INDEXED
                ACCESS MODE IS RANDOM
                RECORD KEY IS USER-NAME.
            SELECT CHANNELS
+               ASSIGN TO DISK
                ORGANIZATION IS SEQUENTIAL.
 
        DATA DIVISION.
