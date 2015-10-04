@@ -9,9 +9,9 @@
            03 WORK-1 REDEFINES WORK PIC X(6).
                88 REST-PARAMETER VALUE "$COLN$".
            03 WORK-DELIM PIC X(6).
-               88 IDENT-SPEC VALUE "!".
-               88 HOST-SPEC VALUE "@".
-               88 END-PREFIX VALUE SPACES.
+               88 IDENT-SPEC VALUE "$EXC$".
+               88 HOST-SPEC VALUE "$AT$".
+               88 PREFIX-END VALUE ALL SPACES.
        01 MSG-POINTER PIC 999.
        01 LOOP-STATE PIC 99.
            88 DONE VALUE 99.
@@ -32,22 +32,24 @@
                05 PARAM PIC 999 OCCURS 15 TIMES.
 
        PROCEDURE DIVISION USING BUFFER, IRC-PARAMETERS.
-           MOVE 0 TO LOOP-STATE.
            MOVE 0 TO IRC-PARAMETERS.
            MOVE SPACES TO WORK.
            MOVE 1 TO MSG-POINTER.
            IF HAS-PREFIX THEN
                PERFORM WITH-PREFIX
            ELSE
+               MOVE 0 TO MSG-SRC
                MOVE 1 TO MSG-POINTER.
            MOVE MSG-POINTER TO COMMAND.
            UNSTRING MSG-BODY DELIMITED BY SPACES
                     INTO WORK
                     WITH POINTER MSG-POINTER.
+           MOVE 0 TO LOOP-STATE.
            PERFORM GET-PARAMETER
                    VARYING NUM-PARAMETERS FROM 1, BY 1
                    UNTIL DONE OR
-                         NUM-PARAMETERS IS GREATER THAN OR EQUAL TO 15.
+                         NUM-PARAMETERS IS NOT LESS THAN 15.
+           SUBTRACT 1 FROM NUM-PARAMETERS.
            EXIT PROGRAM.
 
        GET-PARAMETER.
@@ -59,17 +61,21 @@
            IF BLANK-PARAM OR REST-PARAMETER THEN
                MOVE 99 TO LOOP-STATE.
            IF BLANK-PARAM THEN
-               SUBTRACT 1 FROM NUM-PARAMETERS.
+               SUBTRACT 1 FROM NUM-PARAMETERS
+           ELSE IF REST-PARAMETER THEN
+               ADD 6 TO PARAM(NUM-PARAMETERS).
 
        WITH-PREFIX.
            MOVE 7 TO MSG-POINTER, MSG-SRC.
-           PERFORM GET-PREFIX-PART UNTIL END-PREFIX.
-           MOVE SPACES TO WORK-DELIM.
+           MOVE 0 TO LOOP-STATE.
+           PERFORM GET-PREFIX-PART UNTIL DONE.
 
        GET-PREFIX-PART.
-           UNSTRING WORK,
+           MOVE SPACES TO WORK-DELIM.
+           UNSTRING MSG-BODY,
                     DELIMITED BY "$EXC$", OR "$AT$", OR SPACES,
                     INTO WORK, DELIMITER IN WORK-DELIM,
                     WITH POINTER MSG-POINTER.
            IF IDENT-SPEC THEN MOVE MSG-POINTER TO IDENT.
            IF HOST-SPEC THEN MOVE MSG-POINTER TO HOST.
+           IF PREFIX-END THEN MOVE 99 TO LOOP-STATE.
