@@ -47,6 +47,8 @@
                88 IS-COMMAND VALUE "$$".
            03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
+           03 WOPO-PARAMS PIC 9.
+           03 WOPO-COUNTER PIC 9.
            03 REG PIC X(480) OCCURS 5 TIMES.
            03 MSG-BODY-TMP PIC X(999).
 
@@ -176,10 +178,11 @@
            CALL "DECODE-STRING" USING ASCII-MSG.
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
-           CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMETERS.
            PERFORM GET-IRC-STATE.
+           PERFORM GET-PARAMS.
 
        GET-IRC-STATE.
+           CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMETERS.
            IF GOT-PREFIX THEN
                MOVE MSG-SRC TO WORK-PTR
                UNSTRING MSG-BODY
@@ -212,18 +215,22 @@
            MOVE 1 TO WORK-PTR.
            PERFORM BLANK-PARAM VARYING WORK-PTR FROM 1, BY 1,
                                UNTIL WORK-PTR IS NOT LESS THAN 5.
+           MOVE 0 TO WOPO-PARAMS.
            UNSTRING WORK DELIMITED BY SPACE
                     INTO PARAM(1)
                          PARAM(2)
                          PARAM(3)
                          PARAM(4)
-                         PARAM(5).
+                         PARAM(5)
+                         TALLYING IN WOPO-PARAMS.
 
        BLANK-PARAM.
            MOVE SPACES TO PARAM(WORK-PTR).
 
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
+      *    SAVE MESSAGE.
+           MOVE MSG-BODY TO MSG-BODY-TMP.
            MOVE NICK TO USER-NAME.
            READ USERS RECORD
                 INVALID KEY MOVE 0 TO USER-LEVEL.
@@ -243,10 +250,12 @@
       D    ELSE
       D        DISPLAY "USER NOT VALIDATED."
            .
+      *        RESTORE AND REPARSE MESSAGE.
+               MOVE MSG-BODY-TMP TO MSG-BODY.
+               PERFORM GET-IRC-STATE.
 
        WAIT-FOR-ACC.
            PERFORM WAIT-FOR-COMMAND.
-           PERFORM GET-PARAMS.
            IF PARAM(1) EQUALS USER-NAME AND PARAM(2) EQUALS "ACC" THEN
                MOVE 99 TO STATE
                IF PARAM(3) IS NOT EQUAL TO "3" THEN
@@ -310,7 +319,6 @@
            PERFORM SEND-LINE.
 
        HANDLE-KICK.
-           PERFORM GET-PARAMS.
            IF PARAM(1) IS EQUAL TO WOPO-NICK THEN
                MOVE SPACES TO MSG-BODY
                STRING "JOIN " DELIMITED BY SIZE,
@@ -338,7 +346,6 @@
                    PERFORM SEND-LINE.
 
        HANDLE-MESSAGE.
-           PERFORM GET-PARAMS.
            IF IS-COMMAND THEN
                MOVE 3 TO WORK-PTR
                UNSTRING PARAM(1) INTO WORK
@@ -409,40 +416,24 @@
            PERFORM SEND-LINE.
  
        HANDLE-JOIN.
-           MOVE PARAM(2) TO REG(1).
-      *    PRESERVE VARIABLES FOR REPLY
-           MOVE NICK TO REG(2).
-           MOVE COMMAND OF IRC-STATE TO REG(3).
-           MOVE TARGET TO REG(4).
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 AND
-              REG(1) IS NOT EQUAL TO "0" THEN
+              PARAM(2) IS NOT EQUAL TO "0" THEN
                MOVE SPACES TO MSG-BODY
                STRING "JOIN ", DELIMITED BY SIZE,
-                      REG(1), DELIMITED BY SPACES,
+                      PARAM(2), DELIMITED BY SPACES,
                       "$NUL$"
                       INTO MSG-BODY
                PERFORM SEND-LINE
-      *        RESTORE NICK AND TARGET, THEN REPLY.
-               MOVE REG(2) TO NICK
-               MOVE REG(3) TO COMMAND OF IRC-STATE
-               MOVE REG(4) TO TARGET
                PERFORM REPLY-ACK.
 
        HANDLE-PART.
-           MOVE PARAM(2) TO REG(1).
-      *    PRESERVE VARIABLES FOR REPLY
-           MOVE NICK TO REG(2).
-           MOVE COMMAND OF IRC-STATE TO REG(3).
-           MOVE TARGET TO REG(4).
-           IF REG(1) EQUALS SPACES THEN
-               MOVE TARGET TO REG(1).
+           IF WOPO-PARAMS IS LESS THAN 2 THEN
+               MOVE TARGET TO REG(1)
+           ELSE
+               MOVE PARAM(2) TO REG(1)
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 THEN
-      *        RESTORE NICK AND TARGET, THEN REPLY.
-               MOVE REG(2) TO NICK
-               MOVE REG(3) TO COMMAND OF IRC-STATE
-               MOVE REG(4) TO TARGET
                PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                STRING "PART " DELIMITED BY SIZE,
@@ -452,19 +443,11 @@
                PERFORM SEND-LINE.
 
        HANDLE-QUIT.
-      *    PRESERVE VARIABLES FOR REPLY
-           MOVE NICK TO REG(1).
-           MOVE COMMAND OF IRC-STATE TO REG(2).
-           MOVE TARGET TO REG(3).
            MOVE "QUIT-MESSAGE" TO CONFIG-KEY.
            READ CONFIG RECORD
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 90 THEN
-      *        RESTORE NICK AND TARGET, THEN REPLY.
-               MOVE REG(1) TO NICK
-               MOVE REG(2) TO COMMAND OF IRC-STATE
-               MOVE REG(3) TO TARGET
                PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                STRING "QUIT $COLN$" DELIMITED BY SIZE,
@@ -474,24 +457,14 @@
                GO TO QUIT.
 
        HANDLE-RELEVEL.
-           MOVE PARAM(2) TO REG(1).
-           MOVE PARAM(3) TO REG(2).
-      *    PRESERVE VARIABLES FOR REPLY
-           MOVE NICK TO REG(3).
-           MOVE COMMAND OF IRC-STATE TO REG(4).
-           MOVE TARGET TO REG(5).
            PERFORM VALIDATE-USER.
-           MOVE REG(1) TO USER-NAME.
+           MOVE PARAM(2) TO USER-NAME.
            IF USER-LEVEL IS EQUAL TO 99 THEN
-               MOVE REG(2) TO USER-LEVEL
+               MOVE PARAM(3) TO USER-LEVEL
                REWRITE USER-RECORD
                    INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-      *    RESTORE NICK AND TARGET, THEN REPLY.
-           MOVE REG(3) TO NICK.
-           MOVE REG(4) TO COMMAND OF IRC-STATE.
-           MOVE REG(5) TO TARGET.
            PERFORM BEGIN-REPLY.
            STRING USER-RECORD
                   INTO MSG-BODY
@@ -499,7 +472,7 @@
            PERFORM SEND-LINE.
 
        HANDLE-BF-CODE.
-           IF PARAM(2) IS EQUAL TO SPACES THEN
+           IF WOPO-PARAMS IS LESS THAN 2 THEN
                PERFORM BEGIN-REPLY
                STRING "CODE. " DELIMITED BY SIZE,
                       BF-CODE DELIMITED BY "$$",
@@ -509,23 +482,14 @@
       D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
            ELSE
-               MOVE PARAM(2) TO REG(1)
-      *        PRESERVE VARIABLES FOR REPLY.
-               MOVE NICK TO REG(2)
-               MOVE COMMAND OF IRC-STATE TO REG(3)
-               MOVE TARGET TO REG(4)
                PERFORM VALIDATE-USER
                IF USER-LEVEL > 60 THEN
-      *            RESTORE NICK AND TARGET, THEN REPLY.
-                   MOVE REG(2) TO NICK
-                   MOVE REG(3) TO COMMAND OF IRC-STATE
-                   MOVE REG(4) TO TARGET
                    MOVE SPACES TO BF-CODE
-                   MOVE REG(1) TO BF-CODE
+                   MOVE PARAM(2) TO BF-CODE
                    PERFORM REPLY-ACK.
                
        HANDLE-BF-INPUT.
-           IF PARAM(2) IS EQUAL TO SPACES THEN
+           IF WOPO-PARAMS IS LESS THAN 2 THEN
                PERFORM BEGIN-REPLY
                STRING "INPUT. ",
                       BF-INPUT
@@ -542,16 +506,8 @@
                UNSTRING MSG-BODY
                         INTO REG(1)
                         WITH POINTER WORK-PTR
-      *        PRESERVE VARIABLES FOR REPLY.
-               MOVE NICK TO REG(2)
-               MOVE COMMAND OF IRC-STATE TO REG(3)
-               MOVE TARGET TO REG(4)
                PERFORM VALIDATE-USER
                IF USER-LEVEL > 50 THEN
-      *            RESTORE NICK AND TARGET, THEN REPLY
-                   MOVE REG(2) TO NICK
-                   MOVE REG(3) TO COMMAND OF IRC-STATE
-                   MOVE REG(4) TO TARGET
                    MOVE REG(1) TO BF-INPUT
                    PERFORM REPLY-ACK.
 
@@ -569,21 +525,12 @@
 
        HANDLE-BF-RUN.
       D    DISPLAY "HANDLING BF-RUN".
-           MOVE PARAM(2) TO REG(1).
-      *    PRESERVE VARIABLES FOR REPLY
-           MOVE NICK TO REG(2).
-           MOVE COMMAND OF IRC-STATE TO REG(3).
-           MOVE TARGET TO REG(4).
            PERFORM VALIDATE-USER.
-           IF REG(1) IS EQUAL TO SPACES THEN
+           IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE 999 TO MAYBE-CYCLE-LIMIT
            ELSE
-               UNSTRING REG(1) INTO MAYBE-CYCLE-LIMIT.
+               UNSTRING PARAM(2) INTO MAYBE-CYCLE-LIMIT.
       D    DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT.
-      *    RESTORE NICK AND TARGET, THEN REPLY.
-           MOVE REG(2) TO NICK
-           MOVE REG(3) TO COMMAND OF IRC-STATE
-           MOVE REG(4) TO TARGET
            IF USER-LEVEL > 50 THEN
                PERFORM REPLY-ACK
                MOVE MAYBE-CYCLE-LIMIT TO CYCLE-LIMIT
