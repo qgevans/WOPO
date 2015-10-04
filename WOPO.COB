@@ -49,7 +49,6 @@
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 WOPO-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
-           03 REG PIC X(480) OCCURS 5 TIMES.
            03 MSG-BODY-TMP PIC X(999).
 
        01 IRC-PARAMETERS.
@@ -440,15 +439,15 @@
 
        HANDLE-PART.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
-               MOVE TARGET TO REG(1)
+               MOVE TARGET TO WORK
            ELSE
-               MOVE PARAM(2) TO REG(1)
+               MOVE PARAM(2) TO WORK
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS GREATER THAN 80 THEN
                PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                STRING "PART " DELIMITED BY SIZE,
-                      REG(1) DELIMITED BY SPACES,
+                      WORK DELIMITED BY SPACES,
                       "$NUL$"
                       INTO MSG-BODY
                PERFORM SEND-LINE.
@@ -575,16 +574,16 @@
       D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
            ELSE
+               PERFORM VALIDATE-USER
                MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
                UNSTRING MSG-BODY DELIMITED BY SPACE
-                                 INTO PARAM(1),
+                                 INTO WORK,
                                  WITH POINTER WORK-PTR
                UNSTRING MSG-BODY
-                        INTO REG(1)
+                        INTO WORK
                         WITH POINTER WORK-PTR
-               PERFORM VALIDATE-USER
                IF USER-LEVEL > 50 THEN
-                   MOVE REG(1) TO BF-INPUT
+                   MOVE WORK TO BF-INPUT
                    PERFORM REPLY-ACK.
 
        HANDLE-BF-OUTPUT.
