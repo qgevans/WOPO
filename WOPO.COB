@@ -48,6 +48,7 @@
            03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 REG PIC X(480) OCCURS 5 TIMES.
+           03 MSG-BODY-TMP PIC X(999).
 
        01 IRC-PARAMETERS.
            03 NUM-PARAMS PIC 99.
@@ -176,6 +177,9 @@
            IF NOT SUCCESS THEN DISPLAY MSG-BODY
                                GO TO DIE.
            CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMETERS.
+           PERFORM GET-IRC-STATE.
+
+       GET-IRC-STATE.
            IF GOT-PREFIX THEN
                MOVE MSG-SRC TO WORK-PTR
                UNSTRING MSG-BODY
@@ -205,14 +209,18 @@
            UNSTRING MSG-BODY DELIMITED BY "$NUL$"
                     INTO WORK
                     WITH POINTER WORK-PTR.
+           MOVE 1 TO WORK-PTR.
+           PERFORM BLANK-PARAM VARYING WORK-PTR FROM 1, BY 1,
+                               UNTIL WORK-PTR IS NOT LESS THAN 5.
            UNSTRING WORK DELIMITED BY SPACE
-                    INTO
-               PARAM(1)
-               PARAM(2)
-               PARAM(3)
-               PARAM(4)
-               PARAM(5).
-           MOVE PARAM(1) TO WORK.
+                    INTO PARAM(1)
+                         PARAM(2)
+                         PARAM(3)
+                         PARAM(4)
+                         PARAM(5).
+
+       BLANK-PARAM.
+           MOVE SPACES TO PARAM(WORK-PTR).
 
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
@@ -333,8 +341,9 @@
            PERFORM GET-PARAMS.
            IF IS-COMMAND THEN
                MOVE 3 TO WORK-PTR
-               UNSTRING WORK INTO PARAM(1)
-                             WITH POINTER WORK-PTR
+               UNSTRING PARAM(1) INTO WORK
+                        WITH POINTER WORK-PTR
+               MOVE WORK TO PARAM(1)
       D        DISPLAY "COMMAND BODY ", PARAM(1)
                IF PARAM(1) IS EQUAL TO "HELP" THEN
                    PERFORM HANDLE-HELP
