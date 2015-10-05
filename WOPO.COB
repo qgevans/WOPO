@@ -697,7 +697,7 @@
                   NICK DELIMITED BY SPACES,
                   " $COLN$$SOH$VERSION WOPO THE COBOL-74 BOT. "
       -           "VERSION WHATEVER. RUNNING ON " DELIMITED BY SIZE
-                  PLATFORM
+                  PLATFORM DELIMITED BY SPACES
                   ".$SOH$$NULL$" DELIMITED BY SIZE
                   INTO MSG-BODY.
            PERFORM SEND-LINE.
