@@ -33,6 +33,8 @@
            03 CHANNEL-NAME PIC X(50).
        
        WORKING-STORAGE SECTION.
+      *CONFIGURATION "CONSTANTS"
+       01 PLATFORM PIC X(16) VALUE "UNIX".
        01 STATE PIC 9(2).
            88 SUCCESS VALUE 0.
            88 DONE VALUE 99.
@@ -45,6 +47,8 @@
            03 WORK PIC X(480).
            03 WORK-PREFIX REDEFINES WORK PIC XX.
                88 IS-COMMAND VALUE "$$".
+           03 WORK-CTCP REDEFINES WORK PIC X(5).
+               88 IS-CTCP VALUE "$SOH$".
            03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 WOPO-PARAMS PIC 9.
@@ -85,6 +89,16 @@
        01 BF-STATE.
            03 MAYBE-CYCLE-LIMIT PIC 9(5)
                VALUE 0.
+
+       01 FORMATTED-TIME.
+           03 FILLER PIC X VALUE "H".
+           03 HOURS-DIGITS PIC 99.
+           03 FILLER PIC X VALUE "M".
+           03 MINUTES-DIGITS PIC 99.
+           03 FILLER PIC X VALUE "S".
+           03 SECONDS-DIGITS PIC 99.
+           03 FILLER PIC X VALUE ".".
+           03 TENTH-SECONDS PIC 99.
 
        PROCEDURE DIVISION.
            DISPLAY "CONFIGURATION FOLLOWS.".
@@ -351,7 +365,9 @@
                    PERFORM SEND-LINE.
 
        HANDLE-MESSAGE.
-           IF IS-COMMAND THEN
+           IF IS-CTCP THEN
+               PERFORM HANDLE-CTCP
+           ELSE IF IS-COMMAND THEN
                MOVE 3 TO WORK-PTR
                UNSTRING PARAM(1) INTO WORK
                         WITH POINTER WORK-PTR
@@ -361,6 +377,8 @@
                    PERFORM HANDLE-HELP
                ELSE IF PARAM(1) IS EQUAL TO "SOURCE" THEN
                    PERFORM HANDLE-SOURCE
+               ELSE IF PARAM(1) IS EQUAL TO "STRESS" THEN
+                   PERFORM HANDLE-STRESS
                ELSE IF PARAM(1) IS EQUAL TO "BF-INPUT" THEN
                    PERFORM HANDLE-BF-INPUT
                ELSE IF PARAM(1) IS EQUAL TO "BF-CODE" THEN
@@ -391,7 +409,7 @@
            PERFORM BEGIN-REPLY.
            STRING "$$BF-INPUT $$BF-CODE $$BF-OUTPUT $$BF-RUN "
       -           "$$HELP $$LEVEL $$JOIN $$PART $$QUIT $$RELEVEL "
-      -           "$$SHITFED $$SOURCE"
+      -           "$$SHITFED $$SOURCE $$STRESS"
       -           "$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
@@ -407,6 +425,24 @@
        HANDLE-SOURCE.
            PERFORM BEGIN-REPLY.
            STRING "HTTPS$COLN$//GITHUB.COM/HEDDWCH/WOPO"
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
+
+       HANDLE-STRESS.
+           MOVE 1 TO WORK-PTR.
+           STRING "PRIVMSG " DELIMITED BY SIZE,
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           IF TARGET IS EQUAL TO WOPO-NICK THEN
+               STRING NICK
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR
+           ELSE
+               STRING TARGET
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR.
+           STRING " $COLN$$SOH$ACTION PUNCHES A BABY.$SOH$$NULL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
@@ -620,6 +656,61 @@
                     MOVE 999 TO CYCLE-LIMIT
                 ELSE IF CYCLE-LIMIT > 9999 THEN
                     MOVE 9999 TO CYCLE-LIMIT.
+
+       HANDLE-CTCP.
+      D    DISPLAY "HANDLING CTCP.".
+           IF NOTICE AND TARGET IS NOT EQUAL TO WOPO-NICK THEN
+               NEXT SENTENCE
+           ELSE
+               MOVE 6 TO WORK-PTR
+               UNSTRING PARAM(1) DELIMITED BY SPACE OR "$SOH$"
+                        INTO WORK
+                        WITH POINTER WORK-PTR
+      D        DISPLAY "CTCP PARAM. ", WORK
+               MOVE WORK TO PARAM(1)
+               IF PARAM(1) IS EQUAL TO "PING" THEN
+                   PERFORM HANDLE-PING
+               ELSE IF PARAM(1) IS EQUAL TO "VERSION" THEN
+                   PERFORM HANDLE-VERSION
+      *        ELSE IF PARAM(1) IS EQUAL TO "TIME" THEN
+      *            PERFORM HANDLE-TIME
+               ELSE NEXT SENTENCE.
+
+       HANDLE-PING.
+           MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR.
+           ADD 5 TO WORK-PTR
+           UNSTRING MSG-BODY DELIMITED BY "$NULL$"
+                    INTO WORK
+                    WITH POINTER WORK-PTR.
+           STRING "NOTICE " DELIMITED BY SIZE,
+                  NICK DELIMITED BY SPACES,
+                  " $COLN$$SOH$" DELIMITED BY SIZE,
+                  WORK DELIMITED BY "$SOH$",
+                  "$SOH$$NUL$" DELIMITED BY SIZE
+                  INTO MSG-BODY.
+      D    DISPLAY MSG-BODY.
+           PERFORM SEND-LINE.
+
+       HANDLE-VERSION.
+      D    DISPLAY "HANDLING VERSION."
+           STRING "NOTICE " DELIMITED BY SIZE,
+                  NICK DELIMITED BY SPACES,
+                  " $COLN$$SOH$VERSION WOPO THE COBOL-74 BOT. "
+      -           "VERSION WHATEVER. RUNNING ON " DELIMITED BY SIZE
+                  PLATFORM
+                  ".$SOH$$NULL$" DELIMITED BY SIZE
+                  INTO MSG-BODY.
+           PERFORM SEND-LINE.
+
+      *HANDLE-TIME.
+      *    MOVE TIME TO FORMATTED-TIME.
+      *    STRING "NOTICE " DELIMITED BY SIZE,
+      *           NICK DELIMITED BY SPACES,
+      *           " $COLN$$SOH$TIME" DELIMITED BY SIZE,
+      *           FORMATTED-TIME DELIMITED BY SIZE,
+      *           "$SOH$"
+      *           INTO MSG-BODY.
+      *    PERFORM SEND-LINE.
 
        QUIT.
            CALL "CHANNEL-CLOSE".
