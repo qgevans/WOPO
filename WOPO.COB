@@ -338,7 +338,15 @@
            PERFORM SEND-LINE.
 
        HANDLE-KICK.
-           IF PARAM(1) IS EQUAL TO WOPO-NICK THEN
+      D    DISPLAY "DETECTED KICK.".
+           MOVE SPACES TO WORK.
+           MOVE PARAM-PTR(2) TO WORK-PTR.
+           UNSTRING MSG-BODY DELIMITED BY SPACE
+                    INTO WORK
+                    WITH POINTER WORK-PTR.
+           IF WORK IS EQUAL TO WOPO-NICK THEN
+      D        DISPLAY "KICK WAS ME."
+               MOVE MSG-BODY TO MSG-BODY-TMP
                MOVE SPACES TO MSG-BODY
                STRING "JOIN " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES
@@ -346,10 +354,7 @@
                      INTO MSG-BODY
                PERFORM SEND-LINE
                MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
-               UNSTRING MSG-BODY DELIMITED BY "$COLN$"
-                        INTO WORK
-                        WITH POINTER WORK-PTR
-               UNSTRING MSG-BODY
+               UNSTRING MSG-BODY-TMP
                         INTO WORK
                         WITH POINTER WORK-PTR
                IF WORK IS NOT EQUAL TO WOPO-NICK THEN
@@ -442,7 +447,7 @@
                STRING TARGET
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR.
-           STRING " $COLN$$SOH$ACTION PUNCHES A BABY.$SOH$$NULL$"
+           STRING " $COLN$$SOH$ACTION PUNCHES A BABY.$SOH$$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
@@ -679,7 +684,7 @@
        HANDLE-PING.
            MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR.
            ADD 5 TO WORK-PTR
-           UNSTRING MSG-BODY DELIMITED BY "$NULL$"
+           UNSTRING MSG-BODY DELIMITED BY "$NUL$"
                     INTO WORK
                     WITH POINTER WORK-PTR.
            STRING "NOTICE " DELIMITED BY SIZE,
@@ -698,7 +703,7 @@
                   " $COLN$$SOH$VERSION WOPO THE COBOL-74 BOT. "
       -           "VERSION WHATEVER. RUNNING ON " DELIMITED BY SIZE
                   PLATFORM DELIMITED BY SPACES
-                  ".$SOH$$NULL$" DELIMITED BY SIZE
+                  ".$SOH$$NUL$" DELIMITED BY SIZE
                   INTO MSG-BODY.
            PERFORM SEND-LINE.
 
