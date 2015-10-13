@@ -508,7 +508,8 @@
                MOVE USER-NAME TO WORK
                CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
                MOVE WORK TO USER-NAME
-      D        DISPLAY "USER NAME. ", USER-NAME.
+      D        DISPLAY "USER NAME. ", USER-NAME
+               .
            IF NOT DONE THEN
                PERFORM BEGIN-REPLY
                STRING USER-NAME
