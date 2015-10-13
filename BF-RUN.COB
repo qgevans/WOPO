@@ -110,7 +110,9 @@
               ELSE IF LSQB THEN
                   MOVE "(" TO CURRENT-INSTRUCTION
               ELSE IF RSQB THEN
-                  MOVE ")" TO CURRENT-INSTRUCTION.
+                  MOVE ")" TO CURRENT-INSTRUCTION
+              ELSE
+                  MOVE SPACE TO CURRENT-INSTRUCTION.
            IF BF-LEFT THEN
                PERFORM DO-LEFT
                MOVE 99 TO LOOP-STATE
