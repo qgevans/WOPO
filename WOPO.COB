@@ -2,6 +2,11 @@
        PROGRAM-ID. "WOPO".
 
        ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+           SWITCH-1 IS SHOW-ESCAPES
+               ON STATUS IS SHOULD-SHOW-ESCAPES.
+
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT CONFIG
@@ -44,7 +49,7 @@
                05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
        01 WOPO.
            03 WOPO-NICK PIC X(16).
-           03 WORK PIC X(480).
+           03 WORK PIC X(999).
            03 WORK-PREFIX REDEFINES WORK PIC XX.
                88 IS-COMMAND VALUE "$$".
            03 WORK-CTCP REDEFINES WORK PIC X(5).
@@ -54,6 +59,10 @@
            03 WOPO-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
            03 MSG-BODY-TMP PIC X(999).
+
+       01 USERS-HEADER.
+           03 FILLER PIC X(16) VALUE "USER NAME.".
+           03 FILLER PIC X(6) VALUE "LEVEL.".
 
        01 IRC-PARAMETERS.
            03 NUM-PARAMS PIC 99.
@@ -397,24 +406,28 @@
                    PERFORM HANDLE-SHITFED
                ELSE IF PARAM(1) IS EQUAL TO "LEVEL" THEN
                    PERFORM HANDLE-LEVEL
-               ELSE IF PARAM(1) IS EQUAL TO "JOIN" THEN
-                   PERFORM HANDLE-JOIN
-               ELSE IF PARAM(1) IS EQUAL TO "PART" THEN
-                   PERFORM HANDLE-PART
+               ELSE IF PARAM(1) IS EQUAL TO "LIST-USERS" THEN
+                   PERFORM HANDLE-LIST-USERS
                ELSE IF PARAM(1) IS EQUAL TO "OP" THEN
                    PERFORM HANDLE-OP
                ELSE IF PARAM(1) IS EQUAL TO "DEOP" THEN
                    PERFORM HANDLE-DEOP
+               ELSE IF PARAM(1) IS EQUAL TO "JOIN" THEN
+                   PERFORM HANDLE-JOIN
+               ELSE IF PARAM(1) IS EQUAL TO "PART" THEN
+                   PERFORM HANDLE-PART
                ELSE IF PARAM(1) IS EQUAL TO "QUIT" THEN
                    PERFORM HANDLE-QUIT
+               ELSE IF PARAM(1) IS EQUAL TO "SHOW-ESCAPES" THEN
+                   PERFORM HANDLE-SHOW-ESCAPES
                ELSE IF PARAM(1) IS EQUAL TO "RELEVEL" THEN
                    PERFORM HANDLE-RELEVEL.
 
        HANDLE-HELP.
            PERFORM BEGIN-REPLY.
            STRING "$$BF-INPUT $$BF-CODE $$BF-OUTPUT $$BF-RUN "
-      -           "$$HELP $$LEVEL $$JOIN $$PART $$QUIT $$RELEVEL "
-      -           "$$SHITFED $$SOURCE $$STRESS"
+      -           "$$HELP $$LEVEL $$LIST-USERS $$JOIN $$PART "
+      -           "$$SHOW-ESCAPES $$RELEVEL $$SOURCE $$STRESS"
       -           "$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
@@ -459,11 +472,55 @@
                MOVE NICK TO USER-NAME.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           PERFORM BEGIN-REPLY
-           STRING USER-RECORD
+           PERFORM BEGIN-REPLY.
+           MOVE 0 TO WOPO-COUNTER.
+           IF SHOULD-SHOW-ESCAPES THEN
+      D        DISPLAY "USER NAME. ", USER-NAME
+               MOVE USER-NAME TO WORK
+               CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
+               MOVE WORK TO USER-NAME
+      D        DISPLAY "USER NAME. ", USER-NAME.
+           STRING USER-NAME
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           ADD WOPO-COUNTER TO WORK-PTR.
+           STRING USER-LEVEL
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
+
+       HANDLE-LIST-USERS.
+           CLOSE USERS.
+           OPEN INPUT USERS.
+           MOVE 0 TO STATE.
+           PERFORM BEGIN-REPLY.
+           STRING USERS-HEADER INTO MSG-BODY WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
+           PERFORM LIST-USER-RECORD UNTIL DONE.
+           CLOSE USERS.
+           OPEN I-O USERS.
+
+       LIST-USER-RECORD.
+           READ USERS NEXT RECORD, AT END MOVE 99 TO STATE.
+           MOVE 0 TO WOPO-COUNTER.
+           IF SHOULD-SHOW-ESCAPES THEN
+      D        DISPLAY "USER NAME. ", USER-NAME
+               MOVE USER-NAME TO WORK
+               CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
+               MOVE WORK TO USER-NAME
+      D        DISPLAY "USER NAME. ", USER-NAME.
+           IF NOT DONE THEN
+               PERFORM BEGIN-REPLY
+               STRING USER-NAME
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR
+               ADD WOPO-COUNTER TO WORK-PTR
+               STRING USER-LEVEL
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR
+               PERFORM SEND-LINE.
+
+           
  
        HANDLE-JOIN.
            PERFORM VALIDATE-USER.
@@ -571,6 +628,25 @@
                PERFORM SEND-LINE
                GO TO QUIT.
 
+       HANDLE-SHOW-ESCAPES.
+           PERFORM VALIDATE-USER.
+           PERFORM BEGIN-REPLY.
+           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER WORK-PTR.
+           IF USER-LEVEL IS NOT LESS THAN 90 THEN
+               IF PARAM(2) IS NOT EQUAL TO SPACES THEN
+                   IF PARAM(2) IS EQUAL TO "ON" THEN
+                       SET SHOW-ESCAPES TO ON
+                   ELSE IF PARAM(2) IS EQUAL TO "OFF" THEN
+                       SET SHOW-ESCAPES TO OFF
+                   ELSE NEXT SENTENCE
+               ELSE IF SHOULD-SHOW-ESCAPES THEN
+                   SET SHOW-ESCAPES TO OFF
+               ELSE SET SHOW-ESCAPES TO ON.
+           IF SHOULD-SHOW-ESCAPES THEN
+               STRING "ON." INTO MSG-BODY WITH POINTER WORK-PTR
+           ELSE STRING "OFF." INTO MSG-BODY WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
+
        HANDLE-RELEVEL.
            PERFORM VALIDATE-USER.
            MOVE PARAM(2) TO USER-NAME.
@@ -630,6 +706,8 @@
            PERFORM BEGIN-REPLY.
       D    DISPLAY "BF OUTPUT. ", BF-OUTPUT.
       D    DISPLAY "STRINGING BF OUTPUT".
+           IF SHOULD-SHOW-ESCAPES THEN
+               CALL "RE-ESCAPE" USING BF-OUTPUT, WOPO-COUNTER.
            STRING "OUTPUT. " DELIMITED BY SIZE,
                   BF-OUTPUT DELIMITED BY "$NUL$"
                   INTO MSG-BODY
