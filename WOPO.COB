@@ -479,7 +479,8 @@
                MOVE USER-NAME TO WORK
                CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
                MOVE WORK TO USER-NAME
-      D        DISPLAY "USER NAME. ", USER-NAME.
+      D        DISPLAY "USER NAME. ", USER-NAME
+               .
            STRING USER-NAME
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
