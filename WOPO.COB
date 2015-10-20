@@ -527,8 +527,6 @@
                       WITH POINTER WORK-PTR
                PERFORM SEND-LINE.
 
-           
- 
        HANDLE-JOIN.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 80 AND
