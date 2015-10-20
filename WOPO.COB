@@ -440,7 +440,8 @@
 
        HANDLE-SHITFED.
            PERFORM BEGIN-REPLY.
-           STRING "$002$LEAVE MY CASE ALONE, ASSHOL$LOWE$."
+           STRING "$002$LEAVE MY CASE ALONE, "
+      -           "$226$$156$$168$ASSHOL$LOWE$$226$$156$$168$."
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
@@ -465,7 +466,8 @@
                STRING TARGET
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR.
-           STRING " $COLN$$SOH$ACTION PUNCHES A BABY.$SOH$$NUL$"
+           STRING " $COLN$$SOH$ACTION PUNCHES A "
+      -           "$226$$156$$168$BABY$226$$156$$168$.$SOH$$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
