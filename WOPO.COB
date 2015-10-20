@@ -676,7 +676,7 @@
                PERFORM SEND-LINE
            ELSE
                PERFORM VALIDATE-USER
-               IF USER-LEVEL > 60 THEN
+               IF USER-LEVEL IS NOT LESS THAN 60 THEN
                    MOVE SPACES TO BF-CODE
                    MOVE PARAM(2) TO BF-CODE
                    PERFORM REPLY-ACK.
@@ -700,7 +700,7 @@
                UNSTRING MSG-BODY
                         INTO WORK
                         WITH POINTER WORK-PTR
-               IF USER-LEVEL > 50 THEN
+               IF USER-LEVEL IS NOT LESS THAN 50 THEN
                    MOVE WORK TO BF-INPUT
                    PERFORM REPLY-ACK.
 
@@ -726,7 +726,7 @@
            ELSE
                UNSTRING PARAM(2) INTO MAYBE-CYCLE-LIMIT.
       D    DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT.
-           IF USER-LEVEL > 50 THEN
+           IF USER-LEVEL IS NOT LESS THAN 50 THEN
                PERFORM REPLY-ACK
                MOVE MAYBE-CYCLE-LIMIT TO CYCLE-LIMIT
                PERFORM BF-LIMIT-CYCLES
