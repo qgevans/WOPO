@@ -325,7 +325,7 @@
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR.
            ADD 1 TO WORK-PTR.
-           STRING "$COLN$"
+           STRING "$COLN$$226$$128$$139$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
