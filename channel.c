@@ -52,7 +52,6 @@ void channel_from_cobol(char *cobol_buffer)
       break;
     }
   }
-  msg_buf[i] = '\0';
   if (i == BUFFER_SIZE) {
     int message_length = 0;
     for(i = 0; i < BUFFER_SIZE; i++) {
@@ -64,6 +63,8 @@ void channel_from_cobol(char *cobol_buffer)
       message_length--;
     }
     msg_buf[message_length] = '\0';
+  } else {
+    msg_buf[i] = '\0';
   }
   return;
 }
