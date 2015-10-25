@@ -89,7 +89,8 @@
            03 BF-INPUT PIC X(999)
                VALUE "$NUL$".
            03 BF-CODE PIC X(999)
-               VALUE ",(.,).$$".
+               VALUE "++++++++++(>++++++(>++++<-)<-)>>.<<+++++(>++++(>--"
+      -              "--<-)<-)>>-.<+++(>---<-)>.-.$$".
            03 BF-OUTPUT PIC X(999)
                VALUE SPACES.
            03 CYCLE-LIMIT PIC 9(5)
