@@ -84,6 +84,20 @@
        READ-INSTRUCTION.
            IF IP IS LESS THAN 999 THEN
                UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP
+               IF BF-ESCAPE THEN
+                   UNSTRING BF-CODE DELIMITED BY "$"
+                            INTO COBOL-STRING
+                            WITH POINTER IP
+                   IF COBOL-STRING IS EQUAL TO SPACES THEN
+                       MOVE "$" TO CURRENT-INSTRUCTION
+                   ELSE IF LSQB THEN
+                       MOVE "(" TO CURRENT-INSTRUCTION
+                   ELSE IF RSQB THEN
+                       MOVE ")" TO CURRENT-INSTRUCTION
+                   ELSE
+                       MOVE SPACE TO CURRENT-INSTRUCTION
+               ELSE
+                   NEXT SENTENCE
            ELSE
                MOVE 99 TO LOOP-STATE.
 
@@ -99,20 +113,6 @@
            IF DONE THEN
       D        DISPLAY "GOING TO HELL"
                GO TO HELL.
-           IF BF-ESCAPE THEN
-              UNSTRING BF-CODE DELIMITED BY "$"
-                       INTO COBOL-STRING
-                       WITH POINTER IP
-              IF COBOL-STRING IS EQUAL TO SPACES THEN
-                  UNSTRING BF-CODE
-                           INTO CURRENT-INSTRUCTION
-                           WITH POINTER IP
-              ELSE IF LSQB THEN
-                  MOVE "(" TO CURRENT-INSTRUCTION
-              ELSE IF RSQB THEN
-                  MOVE ")" TO CURRENT-INSTRUCTION
-              ELSE
-                  MOVE SPACE TO CURRENT-INSTRUCTION.
            IF BF-LEFT THEN
                PERFORM DO-LEFT
                MOVE 99 TO LOOP-STATE
@@ -241,24 +241,73 @@
            SUBTRACT 1 FROM LOOP-DEPTH.
            IF BF-CELL(CURRENT-CELL) IS NOT EQUAL TO 0 THEN
                MOVE LOOP-DEPTH TO LOOP-WORK
-               PERFORM FIND-BEGIN UNTIL DONE
-               ADD 1 TO IP.
+               SUBTRACT 1 FROM IP
+               PERFORM FIND-BEGIN UNTIL DONE.
            MOVE 99 TO LOOP-STATE.
 
        FIND-BEGIN.
+      D    DISPLAY "ENTERED FIND-BEGIN."
            PERFORM UNREAD-INSTRUCTION.
            IF NOT DONE THEN
                IF BF-END THEN
                    ADD 1 TO LOOP-WORK
                ELSE IF BF-BEGIN THEN
+      D            DISPLAY "FOUND BEGIN."
                    SUBTRACT 1 FROM LOOP-WORK
                    IF LOOP-WORK EQUALS LOOP-DEPTH THEN
+                       ADD 1 TO IP
                        MOVE 99 TO LOOP-STATE.
+      D    DISPLAY "FIND-BEGIN.", IP, ";", CURRENT-INSTRUCTION,
+      D            "LD", LOOP-DEPTH, "LW", LOOP-WORK.
+
 
        UNREAD-INSTRUCTION.
            UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP.
-           IF IP IS GREATER THAN 3 THEN
+           IF BF-ESCAPE THEN
+      D        DISPLAY "PROCESSING ESCAPE"
+               SUBTRACT 2 FROM IP
+               PERFORM FIND-ESCAPE-BEGIN UNTIL DONE
+               MOVE 0 TO LOOP-STATE
+               ADD 2 TO IP
+               UNSTRING BF-CODE DELIMITED BY "$"
+                        INTO COBOL-STRING
+                        WITH POINTER IP
+      D        DISPLAY "ESCAPED CHARACTER. $", COBOL-STRING, "$"
+               SUBTRACT 2 FROM IP
+               PERFORM FIND-ESCAPE-BEGIN UNTIL DONE
+               MOVE 0 TO LOOP-STATE
+               IF COBOL-STRING IS EQUAL TO SPACES THEN
+                   MOVE "$" TO CURRENT-INSTRUCTION
+               ELSE IF LSQB THEN
+                   MOVE "(" TO CURRENT-INSTRUCTION
+               ELSE IF RSQB THEN
+                   MOVE ")" TO CURRENT-INSTRUCTION
+               ELSE
+                   MOVE SPACE TO CURRENT-INSTRUCTION
+           ELSE
+      D        DISPLAY "NOT AN ESCAPE"
+               IF IP IS GREATER THAN 2 THEN
+                   SUBTRACT 2 FROM IP
+               ELSE
+                   MOVE 1 TO IP
+               MOVE 99 TO LOOP-STATE.
+
+       FIND-ESCAPE-BEGIN.
+           UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP.
+      D    DISPLAY "PROCESSING CHARACTER. ", CURRENT-INSTRUCTION.
+           IF BF-ESCAPE THEN
+               MOVE 99 TO LOOP-STATE.
+           IF IP IS GREATER THAN 2 THEN
                SUBTRACT 2 FROM IP
            ELSE
                MOVE 1 TO IP
                MOVE 99 TO LOOP-STATE.
+
+
+      *UNREAD-INSTRUCTION.
+      *    UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP.
+      *    IF IP IS GREATER THAN 3 THEN
+      *        SUBTRACT 2 FROM IP
+      *    ELSE
+      *        MOVE 1 TO IP
+      *        MOVE 99 TO LOOP-STATE.
