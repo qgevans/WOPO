@@ -732,20 +732,26 @@
        HANDLE-BF-CODE.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                PERFORM BEGIN-REPLY
-               STRING "CODE. " DELIMITED BY SIZE,
-                      BF-CODE DELIMITED BY "$$",
-                      "$NUL$" DELIMITED BY SIZE
+               STRING "CODE. ",
+                      BF-CODE,
+                      "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
       D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
            ELSE
                PERFORM VALIDATE-USER
+               MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
+               UNSTRING MSG-BODY DELIMITED BY SPACE
+                                 INTO WORK,
+                                 WITH POINTER WORK-PTR
+               UNSTRING MSG-BODY
+                        INTO WORK
+                        WITH POINTER WORK-PTR
                IF USER-LEVEL IS NOT LESS THAN 60 THEN
-                   MOVE SPACES TO BF-CODE
-                   MOVE PARAM(2) TO BF-CODE
+                   MOVE WORK TO BF-CODE
                    PERFORM REPLY-ACK.
-               
+
        HANDLE-BF-INPUT.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                PERFORM BEGIN-REPLY
