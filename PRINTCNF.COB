@@ -26,7 +26,7 @@
            03 CONFIG-VALUE PIC X(64).
        FD USERS.
        01 USER-RECORD.
-           03 USER-NAME PIC X(16).
+           03 USER-NAME PIC X(40).
            03 USER-LEVEL PIC 9(2).
        FD CHANNELS.
        01 CHANNEL-RECORD.

@@ -31,7 +31,7 @@
            03 CONFIG-VALUE PIC X(64).
        FD USERS.
        01 USER-RECORD.
-           03 USER-NAME PIC X(16).
+           03 USER-NAME PIC X(40).
            03 USER-LEVEL PIC 9(2).
        FD CHANNELS.
        01 CHANNEL-RECORD.
@@ -48,7 +48,7 @@
            03 ASCII-TABLE.
                05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
        01 WOPO.
-           03 WOPO-NICK PIC X(16).
+           03 WOPO-NICK PIC X(40).
            03 WORK PIC X(999).
            03 WORK-PREFIX REDEFINES WORK PIC XX.
                88 IS-COMMAND VALUE "$$".
@@ -61,7 +61,7 @@
            03 MSG-BODY-TMP PIC X(999).
 
        01 USERS-HEADER.
-           03 FILLER PIC X(16) VALUE "USER NAME.".
+           03 FILLER PIC X(40) VALUE "USER NAME.".
            03 FILLER PIC X(6) VALUE "LEVEL.".
 
        01 IRC-PARAMETERS.
@@ -76,7 +76,7 @@
                05 PARAM-PTR PIC 999 OCCURS 15 TIMES.
 
        01 IRC-STATE.
-           03 NICK PIC X(16).
+           03 NICK PIC X(40).
            03 COMMAND PIC X(16).
                88 KICK VALUE "KICK".
                88 PING VALUE "PING".
@@ -260,36 +260,31 @@
       *    SAVE MESSAGE.
            MOVE MSG-BODY TO MSG-BODY-TMP.
            MOVE NICK TO USER-NAME.
-           READ USERS RECORD
-                INVALID KEY MOVE 0 TO USER-LEVEL.
-      D    DISPLAY "SUPPOSED USER LEVEL ", USER-LEVEL.
-           IF USER-LEVEL IS GREATER THAN 0 THEN
-               MOVE SPACES TO MSG-BODY
-               STRING "PRIVMSG NICKSERV $COLN$ACC " DELIMITED BY SIZE
-                      NICK DELIMITED BY SPACE
-                      "$NUL$"
-                      INTO MSG-BODY
-               PERFORM SEND-LINE
-               MOVE "NOTICE" TO WAITING-COMMAND
-               MOVE 0 TO STATE
-      D        DISPLAY "WAITING FOR ACC."
-               PERFORM WAIT-FOR-ACC UNTIL DONE
-      D        DISPLAY "USER VALIDATED."
-      D    ELSE
-      D        DISPLAY "USER NOT VALIDATED."
-           .
-      *        RESTORE AND REPARSE MESSAGE.
-               MOVE MSG-BODY-TMP TO MSG-BODY.
-               PERFORM GET-IRC-STATE.
-               PERFORM GET-PARAMS.
+           MOVE SPACES TO MSG-BODY
+           STRING "PRIVMSG NICKSERV $COLN$ACC " DELIMITED BY SIZE
+                  NICK DELIMITED BY SPACE
+                  " *$NUL$"
+                  INTO MSG-BODY
+           PERFORM SEND-LINE
+           MOVE "NOTICE" TO WAITING-COMMAND
+           MOVE 0 TO STATE
+      D    DISPLAY "WAITING FOR ACC."
+           PERFORM WAIT-FOR-ACC UNTIL DONE
+      *    RESTORE AND REPARSE MESSAGE.
+           MOVE MSG-BODY-TMP TO MSG-BODY.
+           PERFORM GET-IRC-STATE.
+           PERFORM GET-PARAMS.
 
        WAIT-FOR-ACC.
            PERFORM WAIT-FOR-COMMAND.
-           IF PARAM(1) EQUALS USER-NAME AND PARAM(2) EQUALS "ACC" THEN
+           IF PARAM(1) EQUALS USER-NAME AND PARAM(4) EQUALS "ACC" THEN
                MOVE 99 TO STATE
-               IF PARAM(3) IS NOT EQUAL TO "3" THEN
+               IF PARAM(5) IS NOT EQUAL TO "3" THEN
                    MOVE 0 TO USER-LEVEL
-               ELSE NEXT SENTENCE
+               ELSE
+                   MOVE PARAM(3) TO USER-NAME
+                   READ USERS RECORD
+                       INVALID KEY MOVE 0 TO USER-LEVEL
            ELSE MOVE SPACES TO COMMAND OF IRC-STATE.
 
        MAIN.
@@ -719,8 +714,12 @@
            MOVE PARAM(2) TO USER-NAME.
            IF USER-LEVEL IS NOT LESS THAN 99 THEN
                MOVE PARAM(3) TO USER-LEVEL
-               REWRITE USER-RECORD
-                   INVALID KEY WRITE USER-RECORD.
+               IF USER-LEVEL IS NOT GREATER THAN ZERO THEN
+                   DELETE USERS RECORD
+                       INVALID KEY NEXT SENTENCE
+               ELSE
+                   REWRITE USER-RECORD
+                       INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
            PERFORM BEGIN-REPLY.

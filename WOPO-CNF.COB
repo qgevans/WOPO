@@ -26,7 +26,7 @@
            03 CONFIG-VALUE PIC X(64).
        FD USERS.
        01 USER-RECORD.
-           03 USER-NAME PIC X(16).
+           03 USER-NAME PIC X(40).
            03 USER-LEVEL PIC 9(2).
        FD CHANNELS.
        01 CHANNEL-RECORD.
@@ -58,25 +58,18 @@
            STOP RUN.
 
        WRITE-CONFIG-ENTRY.
-           DISPLAY "KEY?"
-           ACCEPT CONFIG-KEY.
-           DISPLAY "VALUE?"
-           ACCEPT CONFIG-VALUE.
-           IF CONFIG-KEY EQUALS SPACES OR CONFIG-VALUE EQUALS SPACES
+           ACCEPT CONFIG-RECORD.
+           IF CONFIG-RECORD IS EQUAL TO SPACES
                THEN MOVE 10 TO STATE
                ELSE WRITE CONFIG-RECORD.
 
        WRITE-USER-ENTRY.
-           DISPLAY "USER?"
-           ACCEPT USER-NAME.
-           DISPLAY "LEVEL?"
-           ACCEPT USER-LEVEL.
+           ACCEPT USER-RECORD.
            IF USER-NAME EQUALS SPACES OR USER-LEVEL EQUALS 0
                THEN MOVE 10 TO STATE
                ELSE WRITE USER-RECORD.
 
        WRITE-CHANNEL-ENTRY.
-           DISPLAY "CHANNEL?"
            ACCEPT CHANNEL-NAME.
            IF CHANNEL-NAME EQUALS SPACES
                THEN MOVE 10 TO STATE
