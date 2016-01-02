@@ -302,12 +302,3 @@
            ELSE
                MOVE 1 TO IP
                MOVE 99 TO LOOP-STATE.
-
-
-      *UNREAD-INSTRUCTION.
-      *    UNSTRING BF-CODE INTO CURRENT-INSTRUCTION WITH POINTER IP.
-      *    IF IP IS GREATER THAN 3 THEN
-      *        SUBTRACT 2 FROM IP
-      *    ELSE
-      *        MOVE 1 TO IP
-      *        MOVE 99 TO LOOP-STATE.
