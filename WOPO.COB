@@ -389,6 +389,8 @@
                    PERFORM HANDLE-SOURCE
                ELSE IF PARAM(1) IS EQUAL TO "STRESS" THEN
                    PERFORM HANDLE-STRESS
+               ELSE IF PARAM(1) IS EQUAL TO "LICK" THEN
+                   PERFORM HANDLE-LICK
                ELSE IF PARAM(1) IS EQUAL TO "BF-INPUT" THEN
                    PERFORM HANDLE-BF-INPUT
                ELSE IF PARAM(1) IS EQUAL TO "BF-CODE" THEN
@@ -464,6 +466,25 @@
                       WITH POINTER WORK-PTR.
            STRING " $COLN$$SOH$ACTION PUNCHES A "
       -           "$226$$156$$168$BABY$226$$156$$168$.$SOH$$NUL$"
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
+
+       HANDLE-LICK.
+           MOVE 1 TO WORK-PTR.
+           STRING "PRIVMSG " DELIMITED BY SIZE,
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           IF TARGET IS EQUAL TO WOPO-NICK THEN
+               STRING NICK
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR
+           ELSE
+               STRING TARGET
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR.
+           STRING " $COLN$$SOH$ACTION VIGOROUSLY LICKS "
+      -           NICK
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
