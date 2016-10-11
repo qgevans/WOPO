@@ -485,6 +485,7 @@
                       WITH POINTER WORK-PTR.
            STRING " $COLN$$SOH$ACTION VIGOROUSLY LICKS "
       -           NICK
+      -           ".$SOH$$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
