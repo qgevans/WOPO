@@ -389,8 +389,8 @@
                    PERFORM HANDLE-SOURCE
                ELSE IF PARAM(1) IS EQUAL TO "STRESS" THEN
                    PERFORM HANDLE-STRESS
-               ELSE IF PARAM(1) IS EQUAL TO "LICK" THEN
-                   PERFORM HANDLE-LICK
+               ELSE IF PARAM(1) IS EQUAL TO "LICK-ME" THEN
+                   PERFORM HANDLE-LICK-ME
                ELSE IF PARAM(1) IS EQUAL TO "BF-INPUT" THEN
                    PERFORM HANDLE-BF-INPUT
                ELSE IF PARAM(1) IS EQUAL TO "BF-CODE" THEN
@@ -470,7 +470,7 @@
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
-       HANDLE-LICK.
+       HANDLE-LICK-ME.
            MOVE 1 TO WORK-PTR.
            STRING "PRIVMSG " DELIMITED BY SIZE,
                   INTO MSG-BODY
