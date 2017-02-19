@@ -427,10 +427,11 @@
 
        HANDLE-HELP.
            PERFORM BEGIN-REPLY.
-           STRING "$$BF-INPUT $$BF-CODE $$BF-OUTPUT $$BF-RUN "
-      -           "$$HELP $$LEVEL $$LIST-USERS $$JOIN $$PART "
-      -           "$$VOICE $$DEVOICE $$OP $$DEOP "
-      -           "$$SHOW-ESCAPES $$RELEVEL $$SOURCE $$STRESS"
+           STRING "COMMANDS$COLN$ "
+      -           "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
+      -           "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK-ME "
+      -           "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
+      -           "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
       -           "$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
