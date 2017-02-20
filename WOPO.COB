@@ -320,8 +320,13 @@
                STRING TARGET DELIMITED BY SPACE
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR.
-           ADD 1 TO WORK-PTR.
-           STRING "$COLN$$226$$128$$139$"
+           STRING " $COLN$" DELIMITED BY SIZE
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+
+       BEGIN-STANDARD-REPLY.
+           PERFORM BEGIN-REPLY.
+           STRING "$226$$128$$139$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
@@ -331,7 +336,7 @@
                      WITH POINTER WORK-PTR.
 
        REPLY-ACK.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING "OK.$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
@@ -426,7 +431,7 @@
                    PERFORM HANDLE-VOICE.
 
        HANDLE-HELP.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING "COMMANDS$COLN$ "
       -           "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
       -           "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK-ME "
@@ -438,7 +443,7 @@
            PERFORM SEND-LINE.
 
        HANDLE-SHITFED.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING "$002$LEAVE MY CASE ALONE, "
       -           "$226$$156$$168$ASSHOL$LOWE$$226$$156$$168$."
                   INTO MSG-BODY
@@ -446,45 +451,23 @@
            PERFORM SEND-LINE.
 
        HANDLE-SOURCE.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING "HTTPS$COLN$//GITHUB.COM/HEDDWCH/WOPO"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-STRESS.
-           MOVE 1 TO WORK-PTR.
-           STRING "PRIVMSG " DELIMITED BY SIZE,
-                  INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           IF TARGET IS EQUAL TO WOPO-NICK THEN
-               STRING NICK
-                      INTO MSG-BODY
-                      WITH POINTER WORK-PTR
-           ELSE
-               STRING TARGET
-                      INTO MSG-BODY
-                      WITH POINTER WORK-PTR.
-           STRING " $COLN$$SOH$ACTION PUNCHES A "
+           PERFORM BEGIN-REPLY.
+           STRING "$SOH$ACTION PUNCHES A "
       -           "$226$$156$$168$BABY$226$$156$$168$.$SOH$$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-LICK-ME.
-           MOVE 1 TO WORK-PTR.
-           STRING "PRIVMSG " DELIMITED BY SIZE,
-                  INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           IF TARGET IS EQUAL TO WOPO-NICK THEN
-               STRING NICK
-                      INTO MSG-BODY
-                      WITH POINTER WORK-PTR
-           ELSE
-               STRING TARGET
-                      INTO MSG-BODY
-                      WITH POINTER WORK-PTR.
-           STRING " $COLN$$SOH$ACTION VIGOROUSLY LICKS "
+           PERFORM BEGIN-REPLY.
+           STRING "$SOH$ACTION VIGOROUSLY LICKS "
       -           NICK
       -           ".$SOH$$NUL$"
                   INTO MSG-BODY
@@ -498,7 +481,7 @@
                MOVE NICK TO USER-NAME.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            MOVE 0 TO WOPO-COUNTER.
            IF SHOULD-SHOW-ESCAPES THEN
       D        DISPLAY "USER NAME. ", USER-NAME
@@ -520,7 +503,7 @@
            CLOSE USERS.
            OPEN INPUT USERS.
            MOVE 0 TO STATE.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING USERS-HEADER INTO MSG-BODY WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
            PERFORM LIST-USER-RECORD UNTIL DONE.
@@ -538,7 +521,7 @@
       D        DISPLAY "USER NAME. ", USER-NAME
                .
            IF NOT DONE THEN
-               PERFORM BEGIN-REPLY
+               PERFORM BEGIN-STANDARD-REPLY
                STRING USER-NAME
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
@@ -715,7 +698,7 @@
 
        HANDLE-SHOW-ESCAPES.
            PERFORM VALIDATE-USER.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER WORK-PTR.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
                IF PARAM(2) IS NOT EQUAL TO SPACES THEN
@@ -745,7 +728,7 @@
                        INVALID KEY WRITE USER-RECORD.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
            STRING USER-RECORD
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
@@ -753,7 +736,7 @@
 
        HANDLE-BF-CODE.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
-               PERFORM BEGIN-REPLY
+               PERFORM BEGIN-STANDARD-REPLY
                STRING "CODE. ",
                       BF-CODE,
                       "$NUL$"
@@ -776,7 +759,7 @@
 
        HANDLE-BF-INPUT.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
-               PERFORM BEGIN-REPLY
+               PERFORM BEGIN-STANDARD-REPLY
                STRING "INPUT. ",
                       BF-INPUT
                       INTO MSG-BODY
@@ -798,7 +781,7 @@
                    PERFORM REPLY-ACK.
 
        HANDLE-BF-OUTPUT.
-           PERFORM BEGIN-REPLY.
+           PERFORM BEGIN-STANDARD-REPLY.
       D    DISPLAY "BF OUTPUT. ", BF-OUTPUT.
       D    DISPLAY "STRINGING BF OUTPUT".
            IF SHOULD-SHOW-ESCAPES THEN
