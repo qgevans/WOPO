@@ -59,6 +59,7 @@
            03 WOPO-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
            03 MSG-BODY-TMP PIC X(999).
+      D    03 DEBUG-PTR PIC 9.
 
        01 USERS-HEADER.
            03 FILLER PIC X(40) VALUE "USER NAME.".
@@ -255,10 +256,15 @@
        BLANK-PARAM.
            MOVE SPACES TO PARAM(WORK-PTR).
 
+       PRESERVE-MESSAGE.
+           MOVE MSG-BODY TO MSG-BODY-TMP.
+
+       RESTORE-MESSAGE.
+           MOVE MSG-BODY-TMP TO MSG-BODY.
+
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
-      *    SAVE MESSAGE.
-           MOVE MSG-BODY TO MSG-BODY-TMP.
+           PERFORM PRESERVE-MESSAGE.
            MOVE NICK TO USER-NAME.
            MOVE SPACES TO MSG-BODY
            STRING "PRIVMSG NICKSERV $COLN$ACC " DELIMITED BY SIZE
@@ -271,7 +277,7 @@
       D    DISPLAY "WAITING FOR ACC."
            PERFORM WAIT-FOR-ACC UNTIL DONE
       *    RESTORE AND REPARSE MESSAGE.
-           MOVE MSG-BODY-TMP TO MSG-BODY.
+           PERFORM RESTORE-MESSAGE
            PERFORM GET-IRC-STATE.
            PERFORM GET-PARAMS.
 
@@ -336,8 +342,17 @@
                      WITH POINTER WORK-PTR.
 
        REPLY-ACK.
+           PERFORM PRESERVE-MESSAGE.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "OK.$NUL$"
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
+           PERFORM RESTORE-MESSAGE.
+
+       REPLY-NAK.
+           PERFORM BEGIN-STANDARD-REPLY.
+           STRING "ACCESS DENIED.$NUL$"
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
@@ -379,7 +394,15 @@
                           INTO MSG-BODY
                    PERFORM SEND-LINE.
 
+      DDEBUG-PARAMS.
+      D    DISPLAY "PARAMETER ", DEBUG-PTR, ": ", PARAM(DEBUG-PTR).
+
        HANDLE-MESSAGE.
+      D    DISPLAY "HANDLING MESSAGE."
+      D    PERFORM DEBUG-PARAMS
+      D            VARYING DEBUG-PTR
+      D            FROM 1, BY 1
+      D            UNTIL DEBUG-PTR IS GREATER THAN WOPO-PARAMS
            IF IS-CTCP THEN
                PERFORM HANDLE-CTCP
            ELSE IF IS-COMMAND THEN
@@ -532,6 +555,7 @@
                PERFORM SEND-LINE.
 
        HANDLE-JOIN.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 80 AND
               PARAM(2) IS NOT EQUAL TO "0" THEN
@@ -541,22 +565,25 @@
                       "$NUL$"
                       INTO MSG-BODY
                PERFORM SEND-LINE
-               PERFORM REPLY-ACK.
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-PART.
+           PERFORM REPLY-ACK.
+           PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE TARGET TO WORK
            ELSE
                MOVE PARAM(2) TO WORK
-           PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 80 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                STRING "PART " DELIMITED BY SIZE,
                       WORK DELIMITED BY SPACES,
                       "$NUL$"
                       INTO MSG-BODY
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+           ELSE
+               PERFORM REPLY-NAK.
 
        STRING-LOWVS.
            STRING "$LOWV$" INTO MSG-BODY WITH POINTER WORK-PTR.
@@ -571,12 +598,12 @@
            ADD 1 TO WORK-PTR.
 
        HANDLE-VOICE.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE NICK TO PARAM(2)
                MOVE 2 TO WOPO-PARAMS.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
                STRING "MODE " DELIMITED BY SIZE,
@@ -596,15 +623,17 @@
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-DEVOICE.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE NICK TO PARAM(2)
                MOVE 2 TO WOPO-PARAMS.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
                STRING "MODE " DELIMITED BY SIZE,
@@ -624,15 +653,17 @@
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-OP.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE NICK TO PARAM(2)
                MOVE 2 TO WOPO-PARAMS.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
                STRING "MODE " DELIMITED BY SIZE,
@@ -652,15 +683,17 @@
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-DEOP.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE NICK TO PARAM(2)
                MOVE 2 TO WOPO-PARAMS.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
                STRING "MODE " DELIMITED BY SIZE,
@@ -680,26 +713,29 @@
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
-               PERFORM SEND-LINE.
+               PERFORM SEND-LINE
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-QUIT.
+           PERFORM REPLY-ACK.
            MOVE "QUIT-MESSAGE" TO CONFIG-KEY.
            READ CONFIG RECORD
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
-               PERFORM REPLY-ACK
                MOVE SPACES TO MSG-BODY
                STRING "QUIT $COLN$" DELIMITED BY SIZE,
                       CONFIG-VALUE,
                       INTO MSG-BODY
                PERFORM SEND-LINE
-               GO TO QUIT.
+               GO TO QUIT
+           ELSE
+               PERFORM REPLY-NAK.
 
        HANDLE-SHOW-ESCAPES.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           PERFORM BEGIN-STANDARD-REPLY.
-           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER WORK-PTR.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
                IF PARAM(2) IS NOT EQUAL TO SPACES THEN
                    IF PARAM(2) IS EQUAL TO "ON" THEN
@@ -709,13 +745,18 @@
                    ELSE NEXT SENTENCE
                ELSE IF SHOULD-SHOW-ESCAPES THEN
                    SET SHOW-ESCAPES TO OFF
-               ELSE SET SHOW-ESCAPES TO ON.
+               ELSE SET SHOW-ESCAPES TO ON
+           ELSE
+               PERFORM REPLY-NAK.
+           PERFORM BEGIN-STANDARD-REPLY.
+           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER WORK-PTR.
            IF SHOULD-SHOW-ESCAPES THEN
                STRING "ON." INTO MSG-BODY WITH POINTER WORK-PTR
            ELSE STRING "OFF." INTO MSG-BODY WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-RELEVEL.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE PARAM(2) TO USER-NAME.
            IF USER-LEVEL IS NOT LESS THAN 99 THEN
@@ -725,7 +766,9 @@
                        INVALID KEY NEXT SENTENCE
                ELSE
                    REWRITE USER-RECORD
-                       INVALID KEY WRITE USER-RECORD.
+                       INVALID KEY WRITE USER-RECORD
+           ELSE
+               PERFORM REPLY-NAK.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
            PERFORM BEGIN-STANDARD-REPLY.
@@ -745,6 +788,7 @@
       D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
            ELSE
+               PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
                UNSTRING MSG-BODY DELIMITED BY SPACE
@@ -755,7 +799,8 @@
                         WITH POINTER WORK-PTR
                IF USER-LEVEL IS NOT LESS THAN 60 THEN
                    MOVE WORK TO BF-CODE
-                   PERFORM REPLY-ACK.
+               ELSE
+                   PERFORM REPLY-NAK.
 
        HANDLE-BF-INPUT.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
@@ -768,6 +813,7 @@
       D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
            ELSE
+               PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
                UNSTRING MSG-BODY DELIMITED BY SPACE
@@ -778,7 +824,8 @@
                         WITH POINTER WORK-PTR
                IF USER-LEVEL IS NOT LESS THAN 50 THEN
                    MOVE WORK TO BF-INPUT
-                   PERFORM REPLY-ACK.
+               ELSE
+                   PERFORM REPLY-NAK.
 
        HANDLE-BF-OUTPUT.
            PERFORM BEGIN-STANDARD-REPLY.
@@ -796,6 +843,7 @@
 
        HANDLE-BF-RUN.
       D    DISPLAY "HANDLING BF-RUN".
+           PERFORM REPLY-ACK
            PERFORM VALIDATE-USER.
            IF WOPO-PARAMS IS LESS THAN 2 THEN
                MOVE 999 TO MAYBE-CYCLE-LIMIT
@@ -803,20 +851,33 @@
                UNSTRING PARAM(2) INTO MAYBE-CYCLE-LIMIT.
       D    DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT.
            IF USER-LEVEL IS NOT LESS THAN 50 THEN
-               PERFORM REPLY-ACK
                MOVE MAYBE-CYCLE-LIMIT TO CYCLE-LIMIT
                PERFORM BF-LIMIT-CYCLES
                CALL "BF-RUN" USING BF-I-O
       D        DISPLAY "BF RAN"
-               PERFORM HANDLE-BF-OUTPUT.
+               PERFORM HANDLE-BF-OUTPUT
+           ELSE
+               PERFORM REPLY-NAK.
 
        BF-LIMIT-CYCLES.
            IF CYCLE-LIMIT > 999 THEN
-             IF USER-LEVEL < 90 THEN
-                IF USER-LEVEL < 70 THEN
-                    MOVE 999 TO CYCLE-LIMIT
-                ELSE IF CYCLE-LIMIT > 9999 THEN
-                    MOVE 9999 TO CYCLE-LIMIT.
+               IF USER-LEVEL < 90 THEN
+                   IF USER-LEVEL < 70 THEN
+                       MOVE 999 TO CYCLE-LIMIT
+                       PERFORM BF-CYCLES-LIMITED
+                   ELSE IF CYCLE-LIMIT > 9999 THEN
+                       MOVE 9999 TO CYCLE-LIMIT
+                       PERFORM BF-CYCLES-LIMITED.
+
+       BF-CYCLES-LIMITED.
+           PERFORM BEGIN-STANDARD-REPLY.
+           STRING "INSUFFICIENT LEVEL FOR REQUESTED CYCLE LIMIT. "
+      -           "ACTUAL LIMIT WILL BE "
+                  CYCLE-LIMIT
+                  "."
+                  INTO MSG-BODY
+                  WITH POINTER WORK-PTR.
+           PERFORM SEND-LINE.
 
        HANDLE-CTCP.
       D    DISPLAY "HANDLING CTCP.".
