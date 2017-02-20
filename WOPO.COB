@@ -455,14 +455,21 @@
 
        HANDLE-HELP.
            PERFORM BEGIN-STANDARD-REPLY.
-           STRING "COMMANDS$COLN$ "
-      -           "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
-      -           "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK "
-      -           "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
-      -           "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
-      -           "$NUL$"
-                  INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+           IF PARAM(2) IS EQUAL TO "ME" THEN
+               STRING "$240$$159$$142$$135$ "
+      -                "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. "
+      -                "$240$$159$$142$$134"
+                       INTO MSG-BODY
+                       WITH POINTER WORK-PTR
+           ELSE
+               STRING "COMMANDS$COLN$ "
+      -               "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
+      -               "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK "
+      -               "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
+      -               "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
+      -               "$NUL$"
+                      INTO MSG-BODY
+                      WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
        HANDLE-SHITFED.
