@@ -430,8 +430,8 @@
                    PERFORM HANDLE-JOIN
                ELSE IF PARAM(1) IS EQUAL TO "LEVEL" THEN
                    PERFORM HANDLE-LEVEL
-               ELSE IF PARAM(1) IS EQUAL TO "LICK-ME" THEN
-                   PERFORM HANDLE-LICK-ME
+               ELSE IF PARAM(1) IS EQUAL TO "LICK" THEN
+                   PERFORM HANDLE-LICK
                ELSE IF PARAM(1) IS EQUAL TO "LIST-USERS" THEN
                    PERFORM HANDLE-LIST-USERS
                ELSE IF PARAM(1) IS EQUAL TO "OP" THEN
@@ -457,7 +457,7 @@
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "COMMANDS$COLN$ "
       -           "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
-      -           "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK-ME "
+      -           "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK "
       -           "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
       -           "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
       -           "$NUL$"
@@ -488,11 +488,15 @@
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
 
-       HANDLE-LICK-ME.
+       HANDLE-LICK.
+           IF WOPO-PARAMS IS LESS THAN 2 THEN
+               MOVE NICK TO WORK
+           ELSE
+               MOVE PARAM(2) TO WORK.
            PERFORM BEGIN-REPLY.
-           STRING "$SOH$ACTION VIGOROUSLY LICKS "
-      -           NICK
-      -           ".$SOH$$NUL$"
+           STRING "$SOH$ACTION VIGOROUSLY LICKS " DELIMITED BY SIZE,
+                  WORK DELIMITED BY SPACES,
+                  ".$SOH$$NUL$" DELIMITED BY SIZE
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            PERFORM SEND-LINE.
