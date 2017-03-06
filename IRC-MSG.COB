@@ -21,18 +21,17 @@
            03 MSG-BODY PIC X(999).
            03 MSG-BODY-1 REDEFINES MSG-BODY PIC X(6).
                88 HAS-PREFIX VALUE "$COLN$".
-       01 IRC-PARAMETERS.
-           03 NUM-PARAMETERS PIC 99.
+       01 IRC-PARAMS.
+           03 NUM-PARAMS PIC 99.
            03 PREFIX.
                05 MSG-SRC PIC 999.
                05 IDENT PIC 999.
                05 HOST PIC 999.
            03 COMMAND PIC 999.
-           03 PARAMS.
-               05 PARAM PIC 999 OCCURS 15 TIMES.
+           03 PARAM PIC 999 OCCURS 15 TIMES.
 
-       PROCEDURE DIVISION USING BUFFER, IRC-PARAMETERS.
-           MOVE 0 TO IRC-PARAMETERS.
+       PROCEDURE DIVISION USING BUFFER, IRC-PARAMS.
+           MOVE 0 TO IRC-PARAMS.
            MOVE SPACES TO WORK.
            MOVE 1 TO MSG-POINTER.
            IF HAS-PREFIX THEN
@@ -46,14 +45,14 @@
                     WITH POINTER MSG-POINTER.
            MOVE 0 TO LOOP-STATE.
            PERFORM GET-PARAMETER
-                   VARYING NUM-PARAMETERS FROM 1, BY 1
+                   VARYING NUM-PARAMS FROM 1, BY 1
                    UNTIL DONE OR
-                         NUM-PARAMETERS IS NOT LESS THAN 15.
-           SUBTRACT 1 FROM NUM-PARAMETERS.
+                         NUM-PARAMS IS NOT LESS THAN 15.
+           SUBTRACT 1 FROM NUM-PARAMS.
            EXIT PROGRAM.
 
        GET-PARAMETER.
-           MOVE MSG-POINTER TO PARAM(NUM-PARAMETERS).
+           MOVE MSG-POINTER TO PARAM(NUM-PARAMS).
            MOVE SPACES TO WORK.
            UNSTRING MSG-BODY DELIMITED BY SPACES
                     INTO WORK
@@ -61,9 +60,9 @@
            IF BLANK-PARAM OR REST-PARAMETER THEN
                MOVE 99 TO LOOP-STATE.
            IF BLANK-PARAM THEN
-               SUBTRACT 1 FROM NUM-PARAMETERS
+               SUBTRACT 1 FROM NUM-PARAMS
            ELSE IF REST-PARAMETER THEN
-               ADD 6 TO PARAM(NUM-PARAMETERS).
+               ADD 6 TO PARAM(NUM-PARAMS).
 
        WITH-PREFIX.
            MOVE 7 TO MSG-POINTER, MSG-SRC.

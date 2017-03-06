@@ -56,7 +56,7 @@
                88 IS-CTCP VALUE "$SOH$".
            03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
-           03 WOPO-PARAMS PIC 9.
+           03 NUM-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
            03 MSG-BODY-TMP PIC X(999).
       D    03 DEBUG-PTR PIC 9.
@@ -65,7 +65,7 @@
            03 FILLER PIC X(40) VALUE "USER NAME.".
            03 FILLER PIC X(6) VALUE "LEVEL.".
 
-       01 IRC-PARAMETERS.
+       01 IRC-PARAMS.
            03 NUM-PARAMS PIC 99.
            03 PREFIX.
                05 MSG-SRC PIC 999.
@@ -73,8 +73,7 @@
                05 IDENT PIC 999.
                05 HOST PIC 999.
            03 COMMAND PIC 999.
-           03 PARAMS.
-               05 PARAM-PTR PIC 999 OCCURS 15 TIMES.
+           03 PARAM PIC 999 OCCURS 15 TIMES.
 
        01 IRC-STATE.
            03 NICK PIC X(40).
@@ -90,7 +89,7 @@
            03 BF-INPUT PIC X(999)
                VALUE "$NUL$".
            03 BF-CODE PIC X(999)
-               VALUE "++++++++++(>++++++(>++++<-)<-)>>.<<+++++(>++++(>--"
+               VALUE "++++++++++(>++++++(>++++<-)<-)>>.<<+++++(>++++(>--
       -              "--<-)<-)>>-.<+++(>---<-)>.-.$$".
            03 BF-OUTPUT PIC X(999)
                VALUE SPACES.
@@ -205,20 +204,20 @@
            PERFORM GET-PARAMS.
 
        GET-IRC-STATE.
-           CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMETERS.
+           CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMS.
            IF GOT-PREFIX THEN
                MOVE MSG-SRC TO WORK-PTR
                UNSTRING MSG-BODY
                         DELIMITED BY "$EXC$" OR "$AT$" OR SPACES
                         INTO NICK
                         WITH POINTER WORK-PTR.
-           MOVE COMMAND OF IRC-PARAMETERS TO WORK-PTR.
+           MOVE COMMAND OF IRC-PARAMS TO WORK-PTR.
            UNSTRING MSG-BODY
                     DELIMITED BY SPACES
                     INTO COMMAND OF IRC-STATE
                     WITH POINTER WORK-PTR.
-           IF NUM-PARAMS IS NOT LESS THAN 1 THEN
-               MOVE PARAM-PTR(1) TO WORK-PTR
+           IF NUM-PARAMS OF IRC-PARAMS IS NOT LESS THAN 1 THEN
+               MOVE PARAM OF IRC-PARAMS(1) TO WORK-PTR
                UNSTRING MSG-BODY
                         DELIMITED BY SPACES
                         INTO TARGET
@@ -231,30 +230,31 @@
                    COMMAND OF IRC-STATE EQUALS WAITING-COMMAND.
 
        GET-PARAMS.
-           MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR.
+           MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
+	        TO WORK-PTR.
            UNSTRING MSG-BODY DELIMITED BY "$NUL$"
                     INTO WORK
                     WITH POINTER WORK-PTR.
            MOVE 1 TO WORK-PTR.
            PERFORM BLANK-PARAM VARYING WORK-PTR FROM 1, BY 1,
                                UNTIL WORK-PTR IS NOT LESS THAN 5.
-           MOVE 0 TO WOPO-PARAMS, STATE.
+           MOVE 0 TO NUM-PARAMS OF WOPO, STATE.
            MOVE 1 TO WORK-PTR.
            PERFORM UNSTRING-PARAM UNTIL DONE.
 
        UNSTRING-PARAM.
-           ADD 1 TO WOPO-PARAMS.
+           ADD 1 TO NUM-PARAMS OF WOPO.
            UNSTRING WORK DELIMITED BY SPACE
-                    INTO PARAM(WOPO-PARAMS)
+                    INTO PARAM OF WOPO(NUM-PARAMS OF WOPO)
                     WITH POINTER WORK-PTR.
-           IF PARAM(WOPO-PARAMS) IS EQUAL TO SPACES THEN
-               SUBTRACT 1 FROM WOPO-PARAMS
+           IF PARAM OF WOPO(NUM-PARAMS OF WOPO) IS EQUAL TO SPACES THEN
+               SUBTRACT 1 FROM NUM-PARAMS OF WOPO
                MOVE 99 TO STATE.
-           IF WOPO-PARAMS IS NOT LESS THAN 5 THEN
+           IF NUM-PARAMS OF WOPO IS NOT LESS THAN 5 THEN
                MOVE 99 TO STATE.
 
        BLANK-PARAM.
-           MOVE SPACES TO PARAM(WORK-PTR).
+           MOVE SPACES TO PARAM OF WOPO(WORK-PTR).
 
        PRESERVE-MESSAGE.
            MOVE MSG-BODY TO MSG-BODY-TMP.
@@ -283,12 +283,13 @@
 
        WAIT-FOR-ACC.
            PERFORM WAIT-FOR-COMMAND.
-           IF PARAM(1) EQUALS USER-NAME AND PARAM(4) EQUALS "ACC" THEN
+           IF PARAM OF WOPO(1) EQUALS USER-NAME AND
+	      PARAM OF WOPO(4) EQUALS "ACC" THEN
                MOVE 99 TO STATE
-               IF PARAM(5) IS NOT EQUAL TO "3" THEN
+               IF PARAM OF WOPO(5) IS NOT EQUAL TO "3" THEN
                    MOVE 0 TO USER-LEVEL
                ELSE
-                   MOVE PARAM(3) TO USER-NAME
+                   MOVE PARAM OF WOPO(3) TO USER-NAME
                    READ USERS RECORD
                        INVALID KEY MOVE 0 TO USER-LEVEL
            ELSE MOVE SPACES TO COMMAND OF IRC-STATE.
@@ -365,7 +366,7 @@
        HANDLE-KICK.
       D    DISPLAY "DETECTED KICK.".
            MOVE SPACES TO WORK.
-           MOVE PARAM-PTR(2) TO WORK-PTR.
+           MOVE PARAM OF IRC-PARAMS(2) TO WORK-PTR.
            UNSTRING MSG-BODY DELIMITED BY SPACE
                     INTO WORK
                     WITH POINTER WORK-PTR.
@@ -378,7 +379,8 @@
                       "$NUL$"
                      INTO MSG-BODY
                PERFORM SEND-LINE
-               MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
+               MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
+	            TO WORK-PTR
                UNSTRING MSG-BODY-TMP
                         INTO WORK
                         WITH POINTER WORK-PTR
@@ -395,67 +397,68 @@
                    PERFORM SEND-LINE.
 
       DDEBUG-PARAMS.
-      D    DISPLAY "PARAMETER ", DEBUG-PTR, ": ", PARAM(DEBUG-PTR).
+      D    DISPLAY "PARAMETER ", DEBUG-PTR, ": ",
+      D	           PARAM OF WOPO(DEBUG-PTR).
 
        HANDLE-MESSAGE.
       D    DISPLAY "HANDLING MESSAGE."
       D    PERFORM DEBUG-PARAMS
       D            VARYING DEBUG-PTR
       D            FROM 1, BY 1
-      D            UNTIL DEBUG-PTR IS GREATER THAN WOPO-PARAMS
+      D            UNTIL DEBUG-PTR IS GREATER THAN NUM-PARAMS OF WOPO
            IF IS-CTCP THEN
                PERFORM HANDLE-CTCP
            ELSE IF IS-COMMAND THEN
                MOVE 3 TO WORK-PTR
-               UNSTRING PARAM(1) INTO WORK
+               UNSTRING PARAM OF WOPO(1) INTO WORK
                         WITH POINTER WORK-PTR
-               MOVE WORK TO PARAM(1)
-      D        DISPLAY "COMMAND BODY ", PARAM(1)
-               IF PARAM(1) IS EQUAL TO "BF-CODE" THEN
+               MOVE WORK TO PARAM OF WOPO(1)
+      D        DISPLAY "COMMAND BODY ", PARAM OF WOPO(1)
+               IF PARAM OF WOPO(1) IS EQUAL TO "BF-CODE" THEN
                    PERFORM HANDLE-BF-CODE
-               ELSE IF PARAM(1) IS EQUAL TO "BF-INPUT" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "BF-INPUT" THEN
                    PERFORM HANDLE-BF-INPUT
-               ELSE IF PARAM(1) IS EQUAL TO "BF-OUTPUT" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "BF-OUTPUT" THEN
                    PERFORM HANDLE-BF-OUTPUT
-               ELSE IF PARAM(1) IS EQUAL TO "BF-RUN" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "BF-RUN" THEN
       D            DISPLAY "BF-RUN"
                    PERFORM HANDLE-BF-RUN
-               ELSE IF PARAM(1) IS EQUAL TO "DEOP" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "DEOP" THEN
                    PERFORM HANDLE-DEOP
-               ELSE IF PARAM(1) IS EQUAL TO "DEVOICE" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "DEVOICE" THEN
                    PERFORM HANDLE-DEVOICE
-               ELSE IF PARAM(1) IS EQUAL TO "HELP" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "HELP" THEN
                    PERFORM HANDLE-HELP
-               ELSE IF PARAM(1) IS EQUAL TO "JOIN" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "JOIN" THEN
                    PERFORM HANDLE-JOIN
-               ELSE IF PARAM(1) IS EQUAL TO "LEVEL" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "LEVEL" THEN
                    PERFORM HANDLE-LEVEL
-               ELSE IF PARAM(1) IS EQUAL TO "LICK" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "LICK" THEN
                    PERFORM HANDLE-LICK
-               ELSE IF PARAM(1) IS EQUAL TO "LIST-USERS" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "LIST-USERS" THEN
                    PERFORM HANDLE-LIST-USERS
-               ELSE IF PARAM(1) IS EQUAL TO "OP" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "OP" THEN
                    PERFORM HANDLE-OP
-               ELSE IF PARAM(1) IS EQUAL TO "PART" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "PART" THEN
                    PERFORM HANDLE-PART
-               ELSE IF PARAM(1) IS EQUAL TO "QUIT" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "QUIT" THEN
                    PERFORM HANDLE-QUIT
-               ELSE IF PARAM(1) IS EQUAL TO "RELEVEL" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "RELEVEL" THEN
                    PERFORM HANDLE-RELEVEL
-               ELSE IF PARAM(1) IS EQUAL TO "SHITFED" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "SHITFED" THEN
                    PERFORM HANDLE-SHITFED
-               ELSE IF PARAM(1) IS EQUAL TO "SHOW-ESCAPES" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "SHOW-ESCAPES" THEN
                    PERFORM HANDLE-SHOW-ESCAPES
-               ELSE IF PARAM(1) IS EQUAL TO "SOURCE" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "SOURCE" THEN
                    PERFORM HANDLE-SOURCE
-               ELSE IF PARAM(1) IS EQUAL TO "STRESS" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "STRESS" THEN
                    PERFORM HANDLE-STRESS
-               ELSE IF PARAM(1) IS EQUAL TO "VOICE" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "VOICE" THEN
                    PERFORM HANDLE-VOICE.
 
        HANDLE-HELP.
            PERFORM BEGIN-STANDARD-REPLY.
-           IF PARAM(2) IS EQUAL TO "ME" THEN
+           IF PARAM OF WOPO(2) IS EQUAL TO "ME" THEN
                STRING "$240$$159$$142$$135$ "
       -                "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. "
       -                "$240$$159$$142$$134"
@@ -463,8 +466,8 @@
                        WITH POINTER WORK-PTR
            ELSE
                STRING "COMMANDS$COLN$ "
-      -               "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN $$DEOP "
-      -               "$$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK "
+      -               "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN "
+      -               "$$DEOP $$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK "
       -               "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
       -               "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
       -               "$NUL$"
@@ -496,10 +499,10 @@
            PERFORM SEND-LINE.
 
        HANDLE-LICK.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                MOVE NICK TO WORK
            ELSE
-               MOVE PARAM(2) TO WORK.
+               MOVE PARAM OF WOPO(2) TO WORK.
            PERFORM BEGIN-REPLY.
            STRING "$SOH$ACTION VIGOROUSLY LICKS " DELIMITED BY SIZE,
                   WORK DELIMITED BY SPACES,
@@ -509,8 +512,8 @@
            PERFORM SEND-LINE.
 
        HANDLE-LEVEL.
-           IF PARAM(2) IS NOT EQUAL TO SPACES THEN
-               MOVE PARAM(2) TO USER-NAME
+           IF PARAM OF WOPO(2) IS NOT EQUAL TO SPACES THEN
+               MOVE PARAM OF WOPO(2) TO USER-NAME
            ELSE
                MOVE NICK TO USER-NAME.
            READ USERS RECORD
@@ -569,10 +572,10 @@
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 80 AND
-              PARAM(2) IS NOT EQUAL TO "0" THEN
+              PARAM OF WOPO(2) IS NOT EQUAL TO "0" THEN
                MOVE SPACES TO MSG-BODY
                STRING "JOIN ", DELIMITED BY SIZE,
-                      PARAM(2), DELIMITED BY SPACES,
+                      PARAM OF WOPO(2), DELIMITED BY SPACES,
                       "$NUL$"
                       INTO MSG-BODY
                PERFORM SEND-LINE
@@ -582,10 +585,10 @@
        HANDLE-PART.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                MOVE TARGET TO WORK
            ELSE
-               MOVE PARAM(2) TO WORK
+               MOVE PARAM OF WOPO(2) TO WORK
            IF USER-LEVEL IS NOT LESS THAN 80 THEN
                MOVE SPACES TO MSG-BODY
                STRING "PART " DELIMITED BY SIZE,
@@ -603,7 +606,7 @@
            STRING "$LOWO$" INTO MSG-BODY WITH POINTER WORK-PTR.
 
        STRING-PARAMS.
-           STRING PARAM(WOPO-COUNTER) DELIMITED BY SPACES
+           STRING PARAM OF WOPO(WOPO-COUNTER) DELIMITED BY SPACES
                   INTO MSG-BODY
                   WITH POINTER WORK-PTR.
            ADD 1 TO WORK-PTR.
@@ -611,9 +614,9 @@
        HANDLE-VOICE.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
-               MOVE NICK TO PARAM(2)
-               MOVE 2 TO WOPO-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
+               MOVE NICK TO PARAM OF WOPO(2)
+               MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
@@ -625,12 +628,14 @@
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		             NUM-PARAMS OF WOPO
                ADD 1 TO WORK-PTR
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
@@ -641,9 +646,9 @@
        HANDLE-DEVOICE.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
-               MOVE NICK TO PARAM(2)
-               MOVE 2 TO WOPO-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
+               MOVE NICK TO PARAM OF WOPO(2)
+               MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
@@ -655,12 +660,14 @@
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		             NUM-PARAMS OF WOPO
                ADD 1 TO WORK-PTR
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
@@ -671,9 +678,9 @@
        HANDLE-OP.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
-               MOVE NICK TO PARAM(2)
-               MOVE 2 TO WOPO-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
+               MOVE NICK TO PARAM OF WOPO(2)
+               MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
@@ -685,12 +692,14 @@
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		       	     NUM-PARAMS OF WOPO
                ADD 1 TO WORK-PTR
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
@@ -701,9 +710,9 @@
        HANDLE-DEOP.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
-               MOVE NICK TO PARAM(2)
-               MOVE 2 TO WOPO-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
+               MOVE NICK TO PARAM OF WOPO(2)
+               MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
                MOVE SPACES TO MSG-BODY
                MOVE 1 TO WORK-PTR
@@ -715,12 +724,14 @@
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		       	     NUM-PARAMS OF WOPO
                ADD 1 TO WORK-PTR
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
-                       UNTIL WOPO-COUNTER IS GREATER THAN WOPO-PARAMS
+                       UNTIL WOPO-COUNTER IS GREATER THAN
+		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
                       WITH POINTER WORK-PTR
@@ -748,10 +759,10 @@
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
-               IF PARAM(2) IS NOT EQUAL TO SPACES THEN
-                   IF PARAM(2) IS EQUAL TO "ON" THEN
+               IF PARAM OF WOPO(2) IS NOT EQUAL TO SPACES THEN
+                   IF PARAM OF WOPO(2) IS EQUAL TO "ON" THEN
                        SET SHOW-ESCAPES TO ON
-                   ELSE IF PARAM(2) IS EQUAL TO "OFF" THEN
+                   ELSE IF PARAM OF WOPO(2) IS EQUAL TO "OFF" THEN
                        SET SHOW-ESCAPES TO OFF
                    ELSE NEXT SENTENCE
                ELSE IF SHOULD-SHOW-ESCAPES THEN
@@ -769,9 +780,9 @@
        HANDLE-RELEVEL.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
-           MOVE PARAM(2) TO USER-NAME.
+           MOVE PARAM OF WOPO(2) TO USER-NAME.
            IF USER-LEVEL IS NOT LESS THAN 99 THEN
-               MOVE PARAM(3) TO USER-LEVEL
+               MOVE PARAM OF WOPO(3) TO USER-LEVEL
                IF USER-LEVEL IS NOT GREATER THAN ZERO THEN
                    DELETE USERS RECORD
                        INVALID KEY NEXT SENTENCE
@@ -789,7 +800,7 @@
            PERFORM SEND-LINE.
 
        HANDLE-BF-CODE.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                PERFORM BEGIN-STANDARD-REPLY
                STRING "CODE. ",
                       BF-CODE,
@@ -801,7 +812,8 @@
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
-               MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
+               MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
+	            TO WORK-PTR
                UNSTRING MSG-BODY DELIMITED BY SPACE
                                  INTO WORK,
                                  WITH POINTER WORK-PTR
@@ -814,7 +826,7 @@
                    PERFORM REPLY-NAK.
 
        HANDLE-BF-INPUT.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                PERFORM BEGIN-STANDARD-REPLY
                STRING "INPUT. ",
                       BF-INPUT
@@ -826,7 +838,8 @@
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
-               MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR
+               MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
+	            TO WORK-PTR
                UNSTRING MSG-BODY DELIMITED BY SPACE
                                  INTO WORK,
                                  WITH POINTER WORK-PTR
@@ -856,10 +869,10 @@
       D    DISPLAY "HANDLING BF-RUN".
            PERFORM REPLY-ACK
            PERFORM VALIDATE-USER.
-           IF WOPO-PARAMS IS LESS THAN 2 THEN
+           IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                MOVE 999 TO MAYBE-CYCLE-LIMIT
            ELSE
-               UNSTRING PARAM(2) INTO MAYBE-CYCLE-LIMIT.
+               UNSTRING PARAM OF WOPO(2) INTO MAYBE-CYCLE-LIMIT.
       D    DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT.
            IF USER-LEVEL IS NOT LESS THAN 50 THEN
                MOVE MAYBE-CYCLE-LIMIT TO CYCLE-LIMIT
@@ -896,21 +909,22 @@
                NEXT SENTENCE
            ELSE
                MOVE 6 TO WORK-PTR
-               UNSTRING PARAM(1) DELIMITED BY SPACE OR "$SOH$"
+               UNSTRING PARAM OF WOPO(1) DELIMITED BY SPACE OR "$SOH$"
                         INTO WORK
                         WITH POINTER WORK-PTR
       D        DISPLAY "CTCP PARAM. ", WORK
-               MOVE WORK TO PARAM(1)
-               IF PARAM(1) IS EQUAL TO "PING" THEN
+               MOVE WORK TO PARAM OF WOPO(1)
+               IF PARAM OF WOPO(1) IS EQUAL TO "PING" THEN
                    PERFORM HANDLE-PING
-               ELSE IF PARAM(1) IS EQUAL TO "VERSION" THEN
+               ELSE IF PARAM OF WOPO(1) IS EQUAL TO "VERSION" THEN
                    PERFORM HANDLE-VERSION
-      *        ELSE IF PARAM(1) IS EQUAL TO "TIME" THEN
+      *        ELSE IF PARAM OF WOPO(1) IS EQUAL TO "TIME" THEN
       *            PERFORM HANDLE-TIME
                ELSE NEXT SENTENCE.
 
        HANDLE-PING.
-           MOVE PARAM-PTR(NUM-PARAMS) TO WORK-PTR.
+           MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
+	        TO WORK-PTR.
            ADD 5 TO WORK-PTR
            UNSTRING MSG-BODY DELIMITED BY "$NUL$"
                     INTO WORK
