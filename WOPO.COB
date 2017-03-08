@@ -49,12 +49,16 @@
                05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
        01 WOPO.
            03 WOPO-NICK PIC X(40).
-           03 WORK PIC X(999).
-           03 WORK-PREFIX REDEFINES WORK PIC XX.
-               88 IS-COMMAND VALUE "$$".
-           03 WORK-CTCP REDEFINES WORK PIC X(5).
-               88 IS-CTCP VALUE "$SOH$".
-           03 WORK-PTR PIC 999 USAGE COMPUTATIONAL.
+           03 REGISTER-FILE.
+               05 REGISTER OCCURS 8 TIMES.
+                   07 R PIC X(999).
+                   07 R-COMMAND REDEFINES R PIC XX.
+                       88 IS-COMMAND VALUE "$$".
+                   07 R-CTCP REDEFINES R PIC X(5).
+                       88 IS-CTCP VALUE "$SOH$".
+                   07 PTR PIC 999.
+               05 SRC PIC 9.
+               05 DEST PIC 9.
            03 PARAM PIC X(480) OCCURS 5 TIMES.
            03 NUM-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
@@ -143,22 +147,22 @@
                   INTO MSG-BODY.
            PERFORM SEND-LINE.
            MOVE SPACES TO MSG-BODY.
-           MOVE 1 TO WORK-PTR.
+           MOVE 1 TO PTR(1).
            STRING "USER " DELIMITED BY SIZE
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            MOVE "IDENT" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            STRING CONFIG-VALUE DELIMITED BY SPACE,
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           ADD 1 TO WORK-PTR.
+                  WITH POINTER PTR(1).
+           ADD 1 TO PTR(1).
            MOVE "REAL-NAME" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            STRING "BOGUS HOST $COLN$" DELIMITED BY SIZE,
                   CONFIG-VALUE DELIMITED BY "  ",
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            OPEN INPUT CHANNELS.
            PERFORM AUTOJOIN-CHANNELS UNTIL DONE.
@@ -206,22 +210,22 @@
        GET-IRC-STATE.
            CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMS.
            IF GOT-PREFIX THEN
-               MOVE MSG-SRC TO WORK-PTR
+               MOVE MSG-SRC TO PTR(1)
                UNSTRING MSG-BODY
                         DELIMITED BY "$EXC$" OR "$AT$" OR SPACES
                         INTO NICK
-                        WITH POINTER WORK-PTR.
-           MOVE COMMAND OF IRC-PARAMS TO WORK-PTR.
+                        WITH POINTER PTR(1).
+           MOVE COMMAND OF IRC-PARAMS TO PTR(1).
            UNSTRING MSG-BODY
                     DELIMITED BY SPACES
                     INTO COMMAND OF IRC-STATE
-                    WITH POINTER WORK-PTR.
+                    WITH POINTER PTR(1).
            IF NUM-PARAMS OF IRC-PARAMS IS NOT LESS THAN 1 THEN
-               MOVE PARAM OF IRC-PARAMS(1) TO WORK-PTR
+               MOVE PARAM OF IRC-PARAMS(1) TO PTR(1)
                UNSTRING MSG-BODY
                         DELIMITED BY SPACES
                         INTO TARGET
-                        WITH POINTER WORK-PTR
+                        WITH POINTER PTR(1)
            ELSE
                MOVE SPACES TO TARGET.
 
@@ -231,22 +235,22 @@
 
        GET-PARAMS.
            MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
-	        TO WORK-PTR.
+	        TO PTR(1).
            UNSTRING MSG-BODY DELIMITED BY "$NUL$"
-                    INTO WORK
-                    WITH POINTER WORK-PTR.
-           MOVE 1 TO WORK-PTR.
-           PERFORM BLANK-PARAM VARYING WORK-PTR FROM 1, BY 1,
-                               UNTIL WORK-PTR IS NOT LESS THAN 5.
+                    INTO R(1)
+                    WITH POINTER PTR(1).
+           MOVE 1 TO PTR(1).
+           PERFORM BLANK-PARAM VARYING PTR(1) FROM 1, BY 1,
+                               UNTIL PTR(1) IS NOT LESS THAN 5.
            MOVE 0 TO NUM-PARAMS OF WOPO, STATE.
-           MOVE 1 TO WORK-PTR.
+           MOVE 1 TO PTR(1).
            PERFORM UNSTRING-PARAM UNTIL DONE.
 
        UNSTRING-PARAM.
            ADD 1 TO NUM-PARAMS OF WOPO.
-           UNSTRING WORK DELIMITED BY SPACE
+           UNSTRING R(1) DELIMITED BY SPACE
                     INTO PARAM OF WOPO(NUM-PARAMS OF WOPO)
-                    WITH POINTER WORK-PTR.
+                    WITH POINTER PTR(1).
            IF PARAM OF WOPO(NUM-PARAMS OF WOPO) IS EQUAL TO SPACES THEN
                SUBTRACT 1 FROM NUM-PARAMS OF WOPO
                MOVE 99 TO STATE.
@@ -254,7 +258,7 @@
                MOVE 99 TO STATE.
 
        BLANK-PARAM.
-           MOVE SPACES TO PARAM OF WOPO(WORK-PTR).
+           MOVE SPACES TO PARAM OF WOPO(PTR(1)).
 
        PRESERVE-MESSAGE.
            MOVE MSG-BODY TO MSG-BODY-TMP.
@@ -314,40 +318,40 @@
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
            MOVE SPACES TO MSG-BODY.
-           MOVE 1 TO WORK-PTR.
+           MOVE 1 TO PTR(1).
            STRING COMMAND OF IRC-STATE DELIMITED BY SPACES
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           ADD 1 TO WORK-PTR.
+                  WITH POINTER PTR(1).
+           ADD 1 TO PTR(1).
            IF TARGET IS EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
            ELSE
                STRING TARGET DELIMITED BY SPACE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR.
+                      WITH POINTER PTR(1).
            STRING " $COLN$" DELIMITED BY SIZE
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
 
        BEGIN-STANDARD-REPLY.
            PERFORM BEGIN-REPLY.
            STRING "$226$$128$$139$"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACES
                      ". " DELIMITED BY SIZE
                      INTO MSG-BODY
-                     WITH POINTER WORK-PTR.
+                     WITH POINTER PTR(1).
 
        REPLY-ACK.
            PERFORM PRESERVE-MESSAGE.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "OK.$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            PERFORM RESTORE-MESSAGE.
 
@@ -355,7 +359,7 @@
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "ACCESS DENIED.$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        PONG.
@@ -365,12 +369,12 @@
 
        HANDLE-KICK.
       D    DISPLAY "DETECTED KICK.".
-           MOVE SPACES TO WORK.
-           MOVE PARAM OF IRC-PARAMS(2) TO WORK-PTR.
+           MOVE SPACES TO R(1).
+           MOVE PARAM OF IRC-PARAMS(2) TO PTR(1).
            UNSTRING MSG-BODY DELIMITED BY SPACE
-                    INTO WORK
-                    WITH POINTER WORK-PTR.
-           IF WORK IS EQUAL TO WOPO-NICK THEN
+                    INTO R(1)
+                    WITH POINTER PTR(1).
+           IF R(1) IS EQUAL TO WOPO-NICK THEN
       D        DISPLAY "KICK WAS ME."
                MOVE MSG-BODY TO MSG-BODY-TMP
                MOVE SPACES TO MSG-BODY
@@ -380,18 +384,18 @@
                      INTO MSG-BODY
                PERFORM SEND-LINE
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
-	            TO WORK-PTR
+	            TO PTR(1)
                UNSTRING MSG-BODY-TMP
-                        INTO WORK
-                        WITH POINTER WORK-PTR
-               IF WORK IS NOT EQUAL TO WOPO-NICK THEN
+                        INTO R(1)
+                        WITH POINTER PTR(1)
+               IF R(1) IS NOT EQUAL TO WOPO-NICK THEN
                    MOVE SPACES TO MSG-BODY
                    STRING "PRIVMSG " DELIMITED BY SIZE,
                           TARGET DELIMITED BY SPACES,
                           " $COLN$" DELIMITED BY SIZE,
                           NICK DELIMITED BY SPACES,
                           ". " DELIMITED BY SIZE,
-                          WORK DELIMITED BY "$NUL$",
+                          R(1) DELIMITED BY "$NUL$",
                           "$NUL$"
                           INTO MSG-BODY
                    PERFORM SEND-LINE.
@@ -406,13 +410,13 @@
       D            VARYING DEBUG-PTR
       D            FROM 1, BY 1
       D            UNTIL DEBUG-PTR IS GREATER THAN NUM-PARAMS OF WOPO
-           IF IS-CTCP THEN
+           IF IS-CTCP(1) THEN
                PERFORM HANDLE-CTCP
-           ELSE IF IS-COMMAND THEN
-               MOVE 3 TO WORK-PTR
-               UNSTRING PARAM OF WOPO(1) INTO WORK
-                        WITH POINTER WORK-PTR
-               MOVE WORK TO PARAM OF WOPO(1)
+           ELSE IF IS-COMMAND(1) THEN
+               MOVE 3 TO PTR(1)
+               UNSTRING PARAM OF WOPO(1) INTO R(1)
+                        WITH POINTER PTR(1)
+               MOVE R(1) TO PARAM OF WOPO(1)
       D        DISPLAY "COMMAND BODY ", PARAM OF WOPO(1)
                IF PARAM OF WOPO(1) IS EQUAL TO "BF-CODE" THEN
                    PERFORM HANDLE-BF-CODE
@@ -463,7 +467,7 @@
       -                "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. "
       -                "$240$$159$$142$$134"
                        INTO MSG-BODY
-                       WITH POINTER WORK-PTR
+                       WITH POINTER PTR(1)
            ELSE
                STRING "COMMANDS$COLN$ "
       -               "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN "
@@ -472,7 +476,7 @@
       -               "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
       -               "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR.
+                      WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-SHITFED.
@@ -480,14 +484,14 @@
            STRING "$002$LEAVE MY CASE ALONE, "
       -           "$226$$156$$168$ASSHOL$LOWE$$226$$156$$168$."
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-SOURCE.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "HTTPS$COLN$//GITHUB.COM/HEDDWCH/WOPO"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-STRESS.
@@ -495,20 +499,20 @@
            STRING "$SOH$ACTION PUNCHES A "
       -           "$226$$156$$168$BABY$226$$156$$168$.$SOH$$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-LICK.
            IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
-               MOVE NICK TO WORK
+               MOVE NICK TO R(1)
            ELSE
-               MOVE PARAM OF WOPO(2) TO WORK.
+               MOVE PARAM OF WOPO(2) TO R(1).
            PERFORM BEGIN-REPLY.
            STRING "$SOH$ACTION VIGOROUSLY LICKS " DELIMITED BY SIZE,
-                  WORK DELIMITED BY SPACES,
+                  R(1) DELIMITED BY SPACES,
                   ".$SOH$$NUL$" DELIMITED BY SIZE
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-LEVEL.
@@ -522,18 +526,18 @@
            MOVE 0 TO WOPO-COUNTER.
            IF SHOULD-SHOW-ESCAPES THEN
       D        DISPLAY "USER NAME. ", USER-NAME
-               MOVE USER-NAME TO WORK
-               CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
-               MOVE WORK TO USER-NAME
+               MOVE USER-NAME TO R(1)
+               CALL "RE-ESCAPE" USING R(1), WOPO-COUNTER
+               MOVE R(1) TO USER-NAME
       D        DISPLAY "USER NAME. ", USER-NAME
                .
            STRING USER-NAME
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           ADD WOPO-COUNTER TO WORK-PTR.
+                  WITH POINTER PTR(1).
+           ADD WOPO-COUNTER TO PTR(1).
            STRING USER-LEVEL
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-LIST-USERS.
@@ -541,7 +545,7 @@
            OPEN INPUT USERS.
            MOVE 0 TO STATE.
            PERFORM BEGIN-STANDARD-REPLY.
-           STRING USERS-HEADER INTO MSG-BODY WITH POINTER WORK-PTR.
+           STRING USERS-HEADER INTO MSG-BODY WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            PERFORM LIST-USER-RECORD UNTIL DONE.
            CLOSE USERS.
@@ -552,20 +556,20 @@
            MOVE 0 TO WOPO-COUNTER.
            IF SHOULD-SHOW-ESCAPES THEN
       D        DISPLAY "USER NAME. ", USER-NAME
-               MOVE USER-NAME TO WORK
-               CALL "RE-ESCAPE" USING WORK, WOPO-COUNTER
-               MOVE WORK TO USER-NAME
+               MOVE USER-NAME TO R(1)
+               CALL "RE-ESCAPE" USING R(1), WOPO-COUNTER
+               MOVE R(1) TO USER-NAME
       D        DISPLAY "USER NAME. ", USER-NAME
                .
            IF NOT DONE THEN
                PERFORM BEGIN-STANDARD-REPLY
                STRING USER-NAME
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
-               ADD WOPO-COUNTER TO WORK-PTR
+                      WITH POINTER PTR(1)
+               ADD WOPO-COUNTER TO PTR(1)
                STRING USER-LEVEL
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM SEND-LINE.
 
        HANDLE-JOIN.
@@ -586,13 +590,13 @@
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
-               MOVE TARGET TO WORK
+               MOVE TARGET TO R(1)
            ELSE
-               MOVE PARAM OF WOPO(2) TO WORK
+               MOVE PARAM OF WOPO(2) TO R(1)
            IF USER-LEVEL IS NOT LESS THAN 80 THEN
                MOVE SPACES TO MSG-BODY
                STRING "PART " DELIMITED BY SIZE,
-                      WORK DELIMITED BY SPACES,
+                      R(1) DELIMITED BY SPACES,
                       "$NUL$"
                       INTO MSG-BODY
                PERFORM SEND-LINE
@@ -600,16 +604,13 @@
                PERFORM REPLY-NAK.
 
        STRING-LOWVS.
-           STRING "$LOWV$" INTO MSG-BODY WITH POINTER WORK-PTR.
-
-       STRING-LOWOS.
-           STRING "$LOWO$" INTO MSG-BODY WITH POINTER WORK-PTR.
+           STRING "$LOWV$" INTO MSG-BODY WITH POINTER PTR(1).
 
        STRING-PARAMS.
            STRING PARAM OF WOPO(WOPO-COUNTER) DELIMITED BY SPACES
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
-           ADD 1 TO WORK-PTR.
+                  WITH POINTER PTR(1).
+           ADD 1 TO PTR(1).
 
        HANDLE-VOICE.
            PERFORM REPLY-ACK.
@@ -619,18 +620,18 @@
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO WORK-PTR
+               MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " +" DELIMITED BY SIZE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		             NUM-PARAMS OF WOPO
-               ADD 1 TO WORK-PTR
+               ADD 1 TO PTR(1)
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
@@ -638,7 +639,7 @@
 		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
@@ -651,18 +652,18 @@
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO WORK-PTR
+               MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " -" DELIMITED BY SIZE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		             NUM-PARAMS OF WOPO
-               ADD 1 TO WORK-PTR
+               ADD 1 TO PTR(1)
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
@@ -670,10 +671,13 @@
 		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
+
+       STRING-LOWOS.
+           STRING "$LOWO$" INTO MSG-BODY WITH POINTER PTR(1).
 
        HANDLE-OP.
            PERFORM REPLY-ACK.
@@ -683,18 +687,18 @@
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO WORK-PTR
+               MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " +" DELIMITED BY SIZE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		       	     NUM-PARAMS OF WOPO
-               ADD 1 TO WORK-PTR
+               ADD 1 TO PTR(1)
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
@@ -702,7 +706,7 @@
 		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
@@ -715,18 +719,18 @@
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
                MOVE SPACES TO MSG-BODY
-               MOVE 1 TO WORK-PTR
+               MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " -" DELIMITED BY SIZE
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		       	     NUM-PARAMS OF WOPO
-               ADD 1 TO WORK-PTR
+               ADD 1 TO PTR(1)
                PERFORM STRING-PARAMS
                        VARYING WOPO-COUNTER
                        FROM 2, BY 1
@@ -734,7 +738,7 @@
 		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
@@ -771,10 +775,10 @@
            ELSE
                PERFORM REPLY-NAK.
            PERFORM BEGIN-STANDARD-REPLY.
-           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER WORK-PTR.
+           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER PTR(1).
            IF SHOULD-SHOW-ESCAPES THEN
-               STRING "ON." INTO MSG-BODY WITH POINTER WORK-PTR
-           ELSE STRING "OFF." INTO MSG-BODY WITH POINTER WORK-PTR.
+               STRING "ON." INTO MSG-BODY WITH POINTER PTR(1)
+           ELSE STRING "OFF." INTO MSG-BODY WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-RELEVEL.
@@ -796,7 +800,7 @@
            PERFORM BEGIN-STANDARD-REPLY.
            STRING USER-RECORD
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-BF-CODE.
@@ -806,22 +810,22 @@
                       BF-CODE,
                       "$NUL$"
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
       D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
-	            TO WORK-PTR
+	            TO PTR(1)
                UNSTRING MSG-BODY DELIMITED BY SPACE
-                                 INTO WORK,
-                                 WITH POINTER WORK-PTR
+                                 INTO R(1),
+                                 WITH POINTER PTR(1)
                UNSTRING MSG-BODY
-                        INTO WORK
-                        WITH POINTER WORK-PTR
+                        INTO R(1)
+                        WITH POINTER PTR(1)
                IF USER-LEVEL IS NOT LESS THAN 60 THEN
-                   MOVE WORK TO BF-CODE
+                   MOVE R(1) TO BF-CODE
                ELSE
                    PERFORM REPLY-NAK.
 
@@ -831,7 +835,7 @@
                STRING "INPUT. ",
                       BF-INPUT
                       INTO MSG-BODY
-                      WITH POINTER WORK-PTR
+                      WITH POINTER PTR(1)
       D        DISPLAY "INPUT. ", BF-INPUT
       D        DISPLAY "MSG-BODY. ", MSG-BODY
                PERFORM SEND-LINE
@@ -839,15 +843,15 @@
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
-	            TO WORK-PTR
+	            TO PTR(1)
                UNSTRING MSG-BODY DELIMITED BY SPACE
-                                 INTO WORK,
-                                 WITH POINTER WORK-PTR
+                                 INTO R(1),
+                                 WITH POINTER PTR(1)
                UNSTRING MSG-BODY
-                        INTO WORK
-                        WITH POINTER WORK-PTR
+                        INTO R(1)
+                        WITH POINTER PTR(1)
                IF USER-LEVEL IS NOT LESS THAN 50 THEN
-                   MOVE WORK TO BF-INPUT
+                   MOVE R(1) TO BF-INPUT
                ELSE
                    PERFORM REPLY-NAK.
 
@@ -860,7 +864,7 @@
            STRING "OUTPUT. " DELIMITED BY SIZE,
                   BF-OUTPUT DELIMITED BY "$NUL$"
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
       D    DISPLAY "SENDING LINE".
            PERFORM SEND-LINE.
       D    DISPLAY "SENT LINE".
@@ -900,7 +904,7 @@
                   CYCLE-LIMIT
                   "."
                   INTO MSG-BODY
-                  WITH POINTER WORK-PTR.
+                  WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-CTCP.
@@ -908,12 +912,12 @@
            IF NOTICE AND TARGET IS NOT EQUAL TO WOPO-NICK THEN
                NEXT SENTENCE
            ELSE
-               MOVE 6 TO WORK-PTR
+               MOVE 6 TO PTR(1)
                UNSTRING PARAM OF WOPO(1) DELIMITED BY SPACE OR "$SOH$"
-                        INTO WORK
-                        WITH POINTER WORK-PTR
-      D        DISPLAY "CTCP PARAM. ", WORK
-               MOVE WORK TO PARAM OF WOPO(1)
+                        INTO R(1)
+                        WITH POINTER PTR(1)
+      D        DISPLAY "CTCP PARAM. ", R(1)
+               MOVE R(1) TO PARAM OF WOPO(1)
                IF PARAM OF WOPO(1) IS EQUAL TO "PING" THEN
                    PERFORM HANDLE-PING
                ELSE IF PARAM OF WOPO(1) IS EQUAL TO "VERSION" THEN
@@ -924,15 +928,15 @@
 
        HANDLE-PING.
            MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
-	        TO WORK-PTR.
-           ADD 5 TO WORK-PTR
+	        TO PTR(1).
+           ADD 5 TO PTR(1)
            UNSTRING MSG-BODY DELIMITED BY "$NUL$"
-                    INTO WORK
-                    WITH POINTER WORK-PTR.
+                    INTO R(1)
+                    WITH POINTER PTR(1).
            STRING "NOTICE " DELIMITED BY SIZE,
                   NICK DELIMITED BY SPACES,
                   " $COLN$$SOH$" DELIMITED BY SIZE,
-                  WORK DELIMITED BY "$SOH$",
+                  R(1) DELIMITED BY "$SOH$",
                   "$SOH$$NUL$" DELIMITED BY SIZE
                   INTO MSG-BODY.
       D    DISPLAY MSG-BODY.
