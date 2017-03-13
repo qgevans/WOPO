@@ -43,10 +43,17 @@
        01 STATE PIC 9(2).
            88 SUCCESS VALUE 0.
            88 DONE VALUE 99.
-       01 ASCII-MSG.
-           03 MSG-BODY PIC X(999).
-           03 ASCII-TABLE.
-               05 ASCII-CELL PIC 999 OCCURS 999 TIMES.
+
+       01 IRC-I-O.
+           03 INPUT-BUFFER.
+               05 MSG-BODY PIC X(999).
+               05 ASCII-TABLE.
+                   07 ASCII-CELL PIC 999 OCCURS 999 TIMES.
+           03 OUTPUT-BUFFER.
+               05 MSG-BODY PIC X(999).
+               05 ASCII-TABLE.
+                   07 ASCII-CELL PIC 999 OCCURS 999 TIMES.
+
        01 WOPO.
            03 WOPO-NICK PIC X(40).
            03 REGISTER-FILE.
@@ -123,10 +130,11 @@
            STRING
                CONFIG-VALUE, DELIMITED BY SPACE,
                "$NUL$"
-               INTO MSG-BODY,
-           CALL "ENCODE-STRING" USING ASCII-MSG.
-           CALL "CHANNEL-OPEN" USING ASCII-TABLE, STATE.
-           IF NOT SUCCESS THEN DISPLAY MSG-BODY
+               INTO MSG-BODY OF OUTPUT-BUFFER,
+           CALL "ENCODE-STRING" USING OUTPUT-BUFFER.
+           CALL "CHANNEL-OPEN" USING ASCII-TABLE OF OUTPUT-BUFFER,
+                                     STATE.
+           IF NOT SUCCESS THEN DISPLAY MSG-BODY OF OUTPUT-BUFFER
                                GO TO DIE.
            MOVE "PASS" TO CONFIG-KEY.
            READ CONFIG RECORD
@@ -135,33 +143,33 @@
                STRING "PASS " DELIMITED BY SIZE,
                       CONFIG-VALUE DELIMITED BY SPACE,
                       "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE.
            MOVE "NICK" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            MOVE CONFIG-VALUE TO WOPO-NICK.
-           MOVE SPACES TO MSG-BODY.
+           MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER.
            STRING "NICK " DELIMITED BY SIZE,
                   WOPO-NICK DELIMITED BY SPACES,
                   "$NUL$"
-                  INTO MSG-BODY.
+                  INTO MSG-BODY OF OUTPUT-BUFFER.
            PERFORM SEND-LINE.
-           MOVE SPACES TO MSG-BODY.
+           MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER.
            MOVE 1 TO PTR(1).
            STRING "USER " DELIMITED BY SIZE
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            MOVE "IDENT" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            STRING CONFIG-VALUE DELIMITED BY SPACE,
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            ADD 1 TO PTR(1).
            MOVE "REAL-NAME" TO CONFIG-KEY.
            PERFORM READ-CONFIG-ENTRY.
            STRING "BOGUS HOST $COLN$" DELIMITED BY SIZE,
                   CONFIG-VALUE DELIMITED BY "  ",
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            OPEN INPUT CHANNELS.
@@ -181,7 +189,7 @@
                STRING "JOIN " DELIMITED BY SIZE,
                       CHANNEL-NAME DELIMITED BY SPACES,
                       "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE.
 
        READ-CONFIG-ENTRY.
@@ -191,38 +199,41 @@
                            GO TO DIE.           
 
        SEND-LINE.
-           CALL "ENCODE-STRING" USING ASCII-MSG.
-           CALL "CHANNEL-SEND" USING ASCII-TABLE, STATE.
-           IF NOT SUCCESS THEN CALL "DECODE-STRING" USING ASCII-MSG
-                               DISPLAY MSG-BODY
+           CALL "ENCODE-STRING" USING OUTPUT-BUFFER.
+           CALL "CHANNEL-SEND" USING ASCII-TABLE OF OUTPUT-BUFFER,
+                                     STATE.
+           IF NOT SUCCESS THEN CALL "DECODE-STRING" USING OUTPUT-BUFFER
+                               DISPLAY MSG-BODY OF OUTPUT-BUFFER
                                GO TO DIE.
 
        RECEIVE-LINE.
-           CALL "CHANNEL-RECV" USING ASCII-TABLE, STATE.
+           CALL "CHANNEL-RECV" USING ASCII-TABLE OF INPUT-BUFFER,
+                                     STATE.
       D    DISPLAY "RECEIVED LINE FROM CHANNEL".
-           MOVE SPACES TO MSG-BODY.
-           CALL "DECODE-STRING" USING ASCII-MSG.
-           IF NOT SUCCESS THEN DISPLAY MSG-BODY
+           MOVE SPACES TO MSG-BODY OF INPUT-BUFFER.
+           CALL "DECODE-STRING" USING INPUT-BUFFER.
+           IF NOT SUCCESS THEN DISPLAY MSG-BODY OF INPUT-BUFFER
                                GO TO DIE.
            PERFORM GET-IRC-STATE.
            PERFORM GET-PARAMS.
 
        GET-IRC-STATE.
-           CALL "PARSE-IRC-MSG" USING MSG-BODY, IRC-PARAMS.
+           CALL "PARSE-IRC-MSG" USING MSG-BODY OF INPUT-BUFFER,
+                                      IRC-PARAMS.
            IF GOT-PREFIX THEN
                MOVE MSG-SRC TO PTR(1)
-               UNSTRING MSG-BODY
+               UNSTRING MSG-BODY OF INPUT-BUFFER
                         DELIMITED BY "$EXC$" OR "$AT$" OR SPACES
                         INTO NICK
                         WITH POINTER PTR(1).
            MOVE COMMAND OF IRC-PARAMS TO PTR(1).
-           UNSTRING MSG-BODY
+           UNSTRING MSG-BODY OF INPUT-BUFFER
                     DELIMITED BY SPACES
                     INTO COMMAND OF IRC-STATE
                     WITH POINTER PTR(1).
            IF NUM-PARAMS OF IRC-PARAMS IS NOT LESS THAN 1 THEN
                MOVE PARAM OF IRC-PARAMS(1) TO PTR(1)
-               UNSTRING MSG-BODY
+               UNSTRING MSG-BODY OF INPUT-BUFFER
                         DELIMITED BY SPACES
                         INTO TARGET
                         WITH POINTER PTR(1)
@@ -236,7 +247,7 @@
        GET-PARAMS.
            MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
 	        TO PTR(1).
-           UNSTRING MSG-BODY DELIMITED BY "$NUL$"
+           UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY "$NUL$"
                     INTO R(1)
                     WITH POINTER PTR(1).
            MOVE 1 TO PTR(1).
@@ -261,20 +272,20 @@
            MOVE SPACES TO PARAM OF WOPO(PTR(1)).
 
        PRESERVE-MESSAGE.
-           MOVE MSG-BODY TO MSG-BODY-TMP.
+           MOVE MSG-BODY OF INPUT-BUFFER TO MSG-BODY-TMP.
 
        RESTORE-MESSAGE.
-           MOVE MSG-BODY-TMP TO MSG-BODY.
+           MOVE MSG-BODY-TMP TO MSG-BODY OF INPUT-BUFFER.
 
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
            PERFORM PRESERVE-MESSAGE.
            MOVE NICK TO USER-NAME.
-           MOVE SPACES TO MSG-BODY
+           MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
            STRING "PRIVMSG NICKSERV $COLN$ACC " DELIMITED BY SIZE
                   NICK DELIMITED BY SPACE
                   " *$NUL$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
            PERFORM SEND-LINE
            MOVE "NOTICE" TO WAITING-COMMAND
            MOVE 0 TO STATE
@@ -317,40 +328,40 @@
 
       *THE REPLY FUNCTIONS NEED NICK, COMMAND, AND TARGET PRESERVED.
        BEGIN-REPLY.
-           MOVE SPACES TO MSG-BODY.
+           MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER.
            MOVE 1 TO PTR(1).
            STRING COMMAND OF IRC-STATE DELIMITED BY SPACES
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            ADD 1 TO PTR(1).
            IF TARGET IS EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
            ELSE
                STRING TARGET DELIMITED BY SPACE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1).
            STRING " $COLN$" DELIMITED BY SIZE
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
 
        BEGIN-STANDARD-REPLY.
            PERFORM BEGIN-REPLY.
            STRING "$226$$128$$139$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            IF TARGET IS NOT EQUAL TO WOPO-NICK THEN
                STRING NICK DELIMITED BY SPACES
                      ". " DELIMITED BY SIZE
-                     INTO MSG-BODY
+                     INTO MSG-BODY OF OUTPUT-BUFFER
                      WITH POINTER PTR(1).
 
        REPLY-ACK.
            PERFORM PRESERVE-MESSAGE.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "OK.$NUL$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            PERFORM RESTORE-MESSAGE.
@@ -358,38 +369,37 @@
        REPLY-NAK.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "ACCESS DENIED.$NUL$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        PONG.
            STRING "PONG$NUL$"
-                  INTO MSG-BODY.
+                  INTO MSG-BODY OF OUTPUT-BUFFER.
            PERFORM SEND-LINE.
 
        HANDLE-KICK.
       D    DISPLAY "DETECTED KICK.".
            MOVE SPACES TO R(1).
            MOVE PARAM OF IRC-PARAMS(2) TO PTR(1).
-           UNSTRING MSG-BODY DELIMITED BY SPACE
+           UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY SPACE
                     INTO R(1)
                     WITH POINTER PTR(1).
            IF R(1) IS EQUAL TO WOPO-NICK THEN
       D        DISPLAY "KICK WAS ME."
-               MOVE MSG-BODY TO MSG-BODY-TMP
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                STRING "JOIN " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES
                       "$NUL$"
-                     INTO MSG-BODY
+                     INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
 	            TO PTR(1)
-               UNSTRING MSG-BODY-TMP
+               UNSTRING MSG-BODY OF INPUT-BUFFER
                         INTO R(1)
                         WITH POINTER PTR(1)
                IF R(1) IS NOT EQUAL TO WOPO-NICK THEN
-                   MOVE SPACES TO MSG-BODY
+                   MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                    STRING "PRIVMSG " DELIMITED BY SIZE,
                           TARGET DELIMITED BY SPACES,
                           " $COLN$" DELIMITED BY SIZE,
@@ -397,7 +407,7 @@
                           ". " DELIMITED BY SIZE,
                           R(1) DELIMITED BY "$NUL$",
                           "$NUL$"
-                          INTO MSG-BODY
+                          INTO MSG-BODY OF OUTPUT-BUFFER
                    PERFORM SEND-LINE.
 
       DDEBUG-PARAMS.
@@ -466,7 +476,7 @@
                STRING "$240$$159$$142$$135$ "
       -                "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. "
       -                "$240$$159$$142$$134"
-                       INTO MSG-BODY
+                       INTO MSG-BODY OF OUTPUT-BUFFER
                        WITH POINTER PTR(1)
            ELSE
                STRING "COMMANDS$COLN$ "
@@ -475,7 +485,7 @@
       -               "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED "
       -               "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE "
       -               "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -483,14 +493,14 @@
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "$002$LEAVE MY CASE ALONE, "
       -           "$226$$156$$168$ASSHOL$LOWE$$226$$156$$168$."
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-SOURCE.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING "HTTPS$COLN$//GITHUB.COM/HEDDWCH/WOPO"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -498,7 +508,7 @@
            PERFORM BEGIN-REPLY.
            STRING "$SOH$ACTION PUNCHES A "
       -           "$226$$156$$168$BABY$226$$156$$168$.$SOH$$NUL$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -511,7 +521,7 @@
            STRING "$SOH$ACTION VIGOROUSLY LICKS " DELIMITED BY SIZE,
                   R(1) DELIMITED BY SPACES,
                   ".$SOH$$NUL$" DELIMITED BY SIZE
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -532,11 +542,11 @@
       D        DISPLAY "USER NAME. ", USER-NAME
                .
            STRING USER-NAME
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            ADD WOPO-COUNTER TO PTR(1).
            STRING USER-LEVEL
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -545,7 +555,8 @@
            OPEN INPUT USERS.
            MOVE 0 TO STATE.
            PERFORM BEGIN-STANDARD-REPLY.
-           STRING USERS-HEADER INTO MSG-BODY WITH POINTER PTR(1).
+           STRING USERS-HEADER INTO MSG-BODY OF OUTPUT-BUFFER
+                               WITH POINTER PTR(1).
            PERFORM SEND-LINE.
            PERFORM LIST-USER-RECORD UNTIL DONE.
            CLOSE USERS.
@@ -564,11 +575,11 @@
            IF NOT DONE THEN
                PERFORM BEGIN-STANDARD-REPLY
                STRING USER-NAME
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                ADD WOPO-COUNTER TO PTR(1)
                STRING USER-LEVEL
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM SEND-LINE.
 
@@ -577,11 +588,11 @@
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 80 AND
               PARAM OF WOPO(2) IS NOT EQUAL TO "0" THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                STRING "JOIN ", DELIMITED BY SIZE,
                       PARAM OF WOPO(2), DELIMITED BY SPACES,
                       "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
@@ -594,21 +605,22 @@
            ELSE
                MOVE PARAM OF WOPO(2) TO R(1)
            IF USER-LEVEL IS NOT LESS THAN 80 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                STRING "PART " DELIMITED BY SIZE,
                       R(1) DELIMITED BY SPACES,
                       "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
 
        STRING-LOWVS.
-           STRING "$LOWV$" INTO MSG-BODY WITH POINTER PTR(1).
+           STRING "$LOWV$" INTO MSG-BODY OF OUTPUT-BUFFER
+                           WITH POINTER PTR(1).
 
        STRING-PARAMS.
            STRING PARAM OF WOPO(WOPO-COUNTER) DELIMITED BY SPACES
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            ADD 1 TO PTR(1).
 
@@ -619,12 +631,12 @@
                MOVE NICK TO PARAM OF WOPO(2)
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " +" DELIMITED BY SIZE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
@@ -638,7 +650,7 @@
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
@@ -651,12 +663,12 @@
                MOVE NICK TO PARAM OF WOPO(2)
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 60 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " -" DELIMITED BY SIZE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM STRING-LOWVS
                        VARYING WOPO-COUNTER
@@ -670,14 +682,15 @@
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		             NUM-PARAMS OF WOPO
                STRING "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-NAK.
 
        STRING-LOWOS.
-           STRING "$LOWO$" INTO MSG-BODY WITH POINTER PTR(1).
+           STRING "$LOWO$" INTO MSG-BODY OF OUTPUT-BUFFER
+                           WITH POINTER PTR(1).
 
        HANDLE-OP.
            PERFORM REPLY-ACK.
@@ -686,12 +699,12 @@
                MOVE NICK TO PARAM OF WOPO(2)
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " +" DELIMITED BY SIZE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
@@ -705,7 +718,7 @@
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
@@ -718,12 +731,12 @@
                MOVE NICK TO PARAM OF WOPO(2)
                MOVE 2 TO NUM-PARAMS OF WOPO.
            IF USER-LEVEL IS NOT LESS THAN 70 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                MOVE 1 TO PTR(1)
                STRING "MODE " DELIMITED BY SIZE,
                       TARGET DELIMITED BY SPACES,
                       " -" DELIMITED BY SIZE
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM STRING-LOWOS
                        VARYING WOPO-COUNTER
@@ -737,7 +750,7 @@
                        UNTIL WOPO-COUNTER IS GREATER THAN
 		       	     NUM-PARAMS OF WOPO
                STRING "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
                PERFORM SEND-LINE
            ELSE
@@ -750,10 +763,10 @@
                INVALID KEY MOVE SPACES TO CONFIG-VALUE.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
-               MOVE SPACES TO MSG-BODY
+               MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                STRING "QUIT $COLN$" DELIMITED BY SIZE,
                       CONFIG-VALUE,
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE
                GO TO QUIT
            ELSE
@@ -775,10 +788,13 @@
            ELSE
                PERFORM REPLY-NAK.
            PERFORM BEGIN-STANDARD-REPLY.
-           STRING "SHOW-ESCAPES " INTO MSG-BODY WITH POINTER PTR(1).
+           STRING "SHOW-ESCAPES " INTO MSG-BODY OF OUTPUT-BUFFER
+                                  WITH POINTER PTR(1).
            IF SHOULD-SHOW-ESCAPES THEN
-               STRING "ON." INTO MSG-BODY WITH POINTER PTR(1)
-           ELSE STRING "OFF." INTO MSG-BODY WITH POINTER PTR(1).
+               STRING "ON." INTO MSG-BODY OF OUTPUT-BUFFER
+                                 WITH POINTER PTR(1)
+           ELSE STRING "OFF." INTO MSG-BODY OF OUTPUT-BUFFER
+                              WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
        HANDLE-RELEVEL.
@@ -799,7 +815,7 @@
                INVALID KEY MOVE 0 TO USER-LEVEL.
            PERFORM BEGIN-STANDARD-REPLY.
            STRING USER-RECORD
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -809,7 +825,7 @@
                STRING "CODE. ",
                       BF-CODE,
                       "$NUL$"
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
       D        DISPLAY "BF-CODE. ", BF-CODE
                PERFORM SEND-LINE
@@ -818,10 +834,10 @@
                PERFORM VALIDATE-USER
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
 	            TO PTR(1)
-               UNSTRING MSG-BODY DELIMITED BY SPACE
-                                 INTO R(1),
-                                 WITH POINTER PTR(1)
-               UNSTRING MSG-BODY
+               UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY SPACE
+                        INTO R(1),
+                        WITH POINTER PTR(1)
+               UNSTRING MSG-BODY OF INPUT-BUFFER
                         INTO R(1)
                         WITH POINTER PTR(1)
                IF USER-LEVEL IS NOT LESS THAN 60 THEN
@@ -834,20 +850,20 @@
                PERFORM BEGIN-STANDARD-REPLY
                STRING "INPUT. ",
                       BF-INPUT
-                      INTO MSG-BODY
+                      INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(1)
       D        DISPLAY "INPUT. ", BF-INPUT
-      D        DISPLAY "MSG-BODY. ", MSG-BODY
+      D        DISPLAY "MSG-BODY. ", MSG-BODY OF OUTPUT-BUFFER
                PERFORM SEND-LINE
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
 	            TO PTR(1)
-               UNSTRING MSG-BODY DELIMITED BY SPACE
-                                 INTO R(1),
-                                 WITH POINTER PTR(1)
-               UNSTRING MSG-BODY
+               UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY SPACE
+                        INTO R(1),
+                        WITH POINTER PTR(1)
+               UNSTRING MSG-BODY OF INPUT-BUFFER
                         INTO R(1)
                         WITH POINTER PTR(1)
                IF USER-LEVEL IS NOT LESS THAN 50 THEN
@@ -863,7 +879,7 @@
                CALL "RE-ESCAPE" USING BF-OUTPUT, WOPO-COUNTER.
            STRING "OUTPUT. " DELIMITED BY SIZE,
                   BF-OUTPUT DELIMITED BY "$NUL$"
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
       D    DISPLAY "SENDING LINE".
            PERFORM SEND-LINE.
@@ -903,7 +919,7 @@
       -           "ACTUAL LIMIT WILL BE "
                   CYCLE-LIMIT
                   "."
-                  INTO MSG-BODY
+                  INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(1).
            PERFORM SEND-LINE.
 
@@ -930,7 +946,7 @@
            MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
 	        TO PTR(1).
            ADD 5 TO PTR(1)
-           UNSTRING MSG-BODY DELIMITED BY "$NUL$"
+           UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY "$NUL$"
                     INTO R(1)
                     WITH POINTER PTR(1).
            STRING "NOTICE " DELIMITED BY SIZE,
@@ -938,8 +954,8 @@
                   " $COLN$$SOH$" DELIMITED BY SIZE,
                   R(1) DELIMITED BY "$SOH$",
                   "$SOH$$NUL$" DELIMITED BY SIZE
-                  INTO MSG-BODY.
-      D    DISPLAY MSG-BODY.
+                  INTO MSG-BODY OF OUTPUT-BUFFER.
+      D    DISPLAY MSG-BODY OF OUTPUT-BUFFER.
            PERFORM SEND-LINE.
 
        HANDLE-VERSION.
@@ -950,7 +966,7 @@
       -           "VERSION WHATEVER. RUNNING ON " DELIMITED BY SIZE
                   PLATFORM DELIMITED BY SPACES
                   ".$SOH$$NUL$" DELIMITED BY SIZE
-                  INTO MSG-BODY.
+                  INTO MSG-BODY OF OUTPUT-BUFFER.
            PERFORM SEND-LINE.
 
       *HANDLE-TIME.
@@ -960,7 +976,7 @@
       *           " $COLN$$SOH$TIME" DELIMITED BY SIZE,
       *           FORMATTED-TIME DELIMITED BY SIZE,
       *           "$SOH$"
-      *           INTO MSG-BODY.
+      *           INTO MSG-BODY OF OUTPUT-BUFFER.
       *    PERFORM SEND-LINE.
 
        QUIT.
