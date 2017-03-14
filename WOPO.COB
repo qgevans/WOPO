@@ -220,6 +220,7 @@
        GET-IRC-STATE.
            CALL "PARSE-IRC-MSG" USING MSG-BODY OF INPUT-BUFFER,
                                       IRC-PARAMS.
+           MOVE SPACES TO NICK.
            IF GOT-PREFIX THEN
                MOVE MSG-SRC TO PTR(1)
                UNSTRING MSG-BODY OF INPUT-BUFFER
