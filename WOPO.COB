@@ -439,7 +439,7 @@
                UNSTRING MSG-BODY OF INPUT-BUFFER
                         INTO R(1)
                         WITH POINTER PTR(1)
-      D        DISPLAY "KICK MESSAGE: ", R(1)
+      D        DISPLAY "KICK MESSAGE. ", R(1)
                IF R(1) IS NOT EQUAL TO NICK OF WOPO THEN
                    MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER
                    STRING "PRIVMSG " DELIMITED BY SIZE,
@@ -551,7 +551,7 @@
                        "$240$$159$$142$$134$$NUL$"
                        INTO R(1)
            ELSE
-               STRING "COMMANDS$COLN$ "
+               STRING "COMMANDS. "
                       "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN ",
                       "$$DEOP $$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK ",
                       "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED ",
