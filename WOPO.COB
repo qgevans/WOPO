@@ -469,7 +469,7 @@
                PERFORM HANDLE-COMMAND
            ELSE
                MOVE 1 TO PTR(2)
-               UNSTRING R(2) DELIMITED BY ": "
+               UNSTRING R(2) DELIMITED BY "$COLN$ "
                         INTO R(1)
                         WITH POINTER PTR(2)
                IF R(1) IS EQUAL TO NICK OF WOPO THEN
@@ -927,7 +927,7 @@
       D        DISPLAY "BF-CODE. ", BF-CODE
                MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
-               PERFORM SEND-LINE
+               PERFORM DO-OUTPUT
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
@@ -946,13 +946,13 @@
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
                STRING "INPUT. ",
-                      BF-CODE,
+                      BF-INPUT,
                       "$NUL$"
                       INTO R(1)
       D        DISPLAY "BF-INPUT. ", BF-CODE
                MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
-               PERFORM SEND-LINE
+               PERFORM DO-OUTPUT
            ELSE
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
