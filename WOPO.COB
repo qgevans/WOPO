@@ -17,7 +17,7 @@
            SELECT USERS
                ASSIGN TO DISK
                ORGANIZATION IS INDEXED
-               ACCESS MODE IS RANDOM
+               ACCESS MODE IS DYNAMIC
                RECORD KEY IS USER-NAME.
            SELECT CHANNELS
                ASSIGN TO DISK
@@ -618,20 +618,18 @@
 
        HANDLE-LIST-USERS.
            CLOSE USERS.
-           OPEN INPUT USERS.
-           MOVE 0 TO STATE.
            STRING USERS-HEADER, "$NUL$" INTO R(1).
            MOVE 1 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
-           PERFORM LIST-USER-RECORD UNTIL DONE.
-           CLOSE USERS.
            OPEN I-O USERS.
+           MOVE 0 TO STATE.
+           PERFORM LIST-USER-RECORD UNTIL DONE.
 
        LIST-USER-RECORD.
            READ USERS NEXT RECORD, AT END MOVE 99 TO STATE.
            IF NOT DONE THEN
-               STRING USER-RECORD, "$NUL$" INTO R(1)               .
+               STRING USER-RECORD, "$NUL$" INTO R(1)
                PERFORM BEGIN-STANDARD-REPLY
                PERFORM DO-OUTPUT.
 
