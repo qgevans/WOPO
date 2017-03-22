@@ -84,7 +84,6 @@
            03 PARAM PIC 999 OCCURS 9 TIMES.
            03 NUM-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
-           03 MSG-BODY-TMP PIC X(999).
       D    03 DEBUG-PTR PIC 9.
 
        01 USERS-HEADER.
