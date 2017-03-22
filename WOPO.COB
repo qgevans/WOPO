@@ -496,49 +496,49 @@
                MOVE 8 TO DEST
                PERFORM GET-REST
                MOVE 8 TO INPUT-SOURCE.
-      *HERE GOES THE SWITCH LOGIC
-       MOVE R(2) TO R(1).
-       MOVE INPUT-SOURCE TO SRC.
-               IF R(1) IS EQUAL TO "BF-CODE" THEN
-                   PERFORM HANDLE-BF-CODE
-               ELSE IF R(1) IS EQUAL TO "BF-INPUT" THEN
-                   PERFORM HANDLE-BF-INPUT
-               ELSE IF R(1) IS EQUAL TO "BF-OUTPUT" THEN
-                   PERFORM HANDLE-BF-OUTPUT
-               ELSE IF R(1) IS EQUAL TO "BF-RUN" THEN
-      D            DISPLAY "BF-RUN"
-                   PERFORM HANDLE-BF-RUN
-               ELSE IF R(1) IS EQUAL TO "DEOP" THEN
-                   PERFORM HANDLE-DEOP
-               ELSE IF R(1) IS EQUAL TO "DEVOICE" THEN
-                   PERFORM HANDLE-DEVOICE
-               ELSE IF R(1) IS EQUAL TO "HELP" THEN
-                   PERFORM HANDLE-HELP
-               ELSE IF R(1) IS EQUAL TO "JOIN" THEN
-                   PERFORM HANDLE-JOIN
-               ELSE IF R(1) IS EQUAL TO "LEVEL" THEN
-                   PERFORM HANDLE-LEVEL
-               ELSE IF R(1) IS EQUAL TO "LICK" THEN
-                   PERFORM HANDLE-LICK
-               ELSE IF R(1) IS EQUAL TO "LIST-USERS" THEN
-                   PERFORM HANDLE-LIST-USERS
-               ELSE IF R(1) IS EQUAL TO "OP" THEN
-                   PERFORM HANDLE-OP
-               ELSE IF R(1) IS EQUAL TO "PART" THEN
-                   PERFORM HANDLE-PART
-               ELSE IF R(1) IS EQUAL TO "QUIT" THEN
-                   PERFORM HANDLE-QUIT
-               ELSE IF R(1) IS EQUAL TO "RELEVEL" THEN
-                   PERFORM HANDLE-RELEVEL
-               ELSE IF R(1) IS EQUAL TO "SHITFED" THEN
-                   PERFORM HANDLE-SHITFED
-               ELSE IF R(1) IS EQUAL TO "SHOW-ESCAPES" THEN
-                   PERFORM HANDLE-SHOW-ESCAPES
-               ELSE IF R(1) IS EQUAL TO "SOURCE" THEN
-                   PERFORM HANDLE-SOURCE
-               ELSE IF R(1) IS EQUAL TO "STRESS" THEN
-                   PERFORM HANDLE-STRESS
-               ELSE IF R(1) IS EQUAL TO "VOICE" THEN
+      *    HERE GOES THE SWITCH LOGIC
+           MOVE R(2) TO R(1).
+           MOVE INPUT-SOURCE TO SRC.
+           IF R(1) IS EQUAL TO "BF-CODE" THEN
+               PERFORM HANDLE-BF-CODE
+           ELSE IF R(1) IS EQUAL TO "BF-INPUT" THEN
+               PERFORM HANDLE-BF-INPUT
+           ELSE IF R(1) IS EQUAL TO "BF-OUTPUT" THEN
+               PERFORM HANDLE-BF-OUTPUT
+           ELSE IF R(1) IS EQUAL TO "BF-RUN" THEN
+      D        DISPLAY "BF-RUN"
+               PERFORM HANDLE-BF-RUN
+           ELSE IF R(1) IS EQUAL TO "DEOP" THEN
+               PERFORM HANDLE-DEOP
+           ELSE IF R(1) IS EQUAL TO "DEVOICE" THEN
+               PERFORM HANDLE-DEVOICE
+           ELSE IF R(1) IS EQUAL TO "HELP" THEN
+               PERFORM HANDLE-HELP
+           ELSE IF R(1) IS EQUAL TO "JOIN" THEN
+               PERFORM HANDLE-JOIN
+           ELSE IF R(1) IS EQUAL TO "LEVEL" THEN
+               PERFORM HANDLE-LEVEL
+           ELSE IF R(1) IS EQUAL TO "LICK" THEN
+               PERFORM HANDLE-LICK
+           ELSE IF R(1) IS EQUAL TO "LIST-USERS" THEN
+               PERFORM HANDLE-LIST-USERS
+           ELSE IF R(1) IS EQUAL TO "OP" THEN
+               PERFORM HANDLE-OP
+           ELSE IF R(1) IS EQUAL TO "PART" THEN
+               PERFORM HANDLE-PART
+           ELSE IF R(1) IS EQUAL TO "QUIT" THEN
+               PERFORM HANDLE-QUIT
+           ELSE IF R(1) IS EQUAL TO "RELEVEL" THEN
+               PERFORM HANDLE-RELEVEL
+           ELSE IF R(1) IS EQUAL TO "SHITFED" THEN
+               PERFORM HANDLE-SHITFED
+           ELSE IF R(1) IS EQUAL TO "SHOW-ESCAPES" THEN
+               PERFORM HANDLE-SHOW-ESCAPES
+           ELSE IF R(1) IS EQUAL TO "SOURCE" THEN
+               PERFORM HANDLE-SOURCE
+           ELSE IF R(1) IS EQUAL TO "STRESS" THEN
+               PERFORM HANDLE-STRESS
+           ELSE IF R(1) IS EQUAL TO "VOICE" THEN
                    PERFORM HANDLE-VOICE.
 
        HANDLE-HELP.
