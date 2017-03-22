@@ -404,8 +404,13 @@
                   WITH POINTER PTR(SRC).
            PERFORM SEND-LINE.
 
+       MAYBE-SHOW-ESCAPES.
+           IF SHOULD-SHOW-ESCAPES THEN
+               CALL "RE-ESCAPE" USING R(SRC).
+
        DO-OUTPUT.
            IF STANDARD-OUTPUT THEN
+               PERFORM MAYBE-SHOW-ESCAPES
                STRING R(SRC) DELIMITED BY "$NUL$",
                       "$NUL$"
                       INTO MSG-BODY OF OUTPUT-BUFFER
