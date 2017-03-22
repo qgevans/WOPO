@@ -458,29 +458,28 @@
            PERFORM GET-MSG-CONTENTS.
            IF IS-CTCP(2) THEN
                PERFORM HANDLE-CTCP
-           ELSE IF IS-COMMAND(2) THEN
-               MOVE COMMAND-BODY(2) TO R(1)
-      D        DISPLAY "COMMAND BODY ", R(1)
-               PERFORM INIT-REPLY
-               PERFORM HANDLE-COMMAND
-           ELSE IF TARGET OF IRC-STATE IS EQUAL TO NICK OF WOPO THEN
-               MOVE R(2) TO R(1)
-               PERFORM INIT-REPLY
-               PERFORM HANDLE-COMMAND
            ELSE
-               MOVE 1 TO PTR(2)
-               UNSTRING R(2) DELIMITED BY "$COLN$ "
-                        INTO R(1)
-                        WITH POINTER PTR(2)
-               IF R(1) IS EQUAL TO NICK OF WOPO THEN
-                   UNSTRING R(2)
+               MOVE 0 TO INPUT-SOURCE, OUTPUT-DEST.
+               PERFORM INIT-REPLY
+               IF IS-COMMAND(2) THEN
+                   MOVE COMMAND-BODY(2) TO R(1)
+      D            DISPLAY "COMMAND BODY ", R(1)
+                   PERFORM HANDLE-COMMAND
+               ELSE IF TARGET OF IRC-STATE IS EQUAL TO NICK OF WOPO THEN
+                   MOVE R(2) TO R(1)
+                   PERFORM HANDLE-COMMAND
+               ELSE
+                   MOVE 1 TO PTR(2)
+                   UNSTRING R(2) DELIMITED BY "$COLN$ "
                             INTO R(1)
                             WITH POINTER PTR(2)
-                   PERFORM INIT-REPLY
-                   PERFORM HANDLE-COMMAND.
+                   IF R(1) IS EQUAL TO NICK OF WOPO THEN
+                       UNSTRING R(2)
+                                INTO R(1)
+                                WITH POINTER PTR(2)
+                       PERFORM HANDLE-COMMAND.
 
        HANDLE-COMMAND.
-           MOVE 0 TO INPUT-SOURCE, OUTPUT-DEST.
            MOVE 1 TO SRC.
            MOVE 2 TO DEST.
            PERFORM INDEX-PARAMS.
