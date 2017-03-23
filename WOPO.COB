@@ -78,6 +78,7 @@
                    07 R-SWITCH REDEFINES R.
                        09 SWITCH PIC X.
                        09 SWITCH-PARAM PIC X.
+                   07 R-INDEX REDEFINES R PIC X.
                    07 PTR PIC 999.
                05 SRC PIC 9.
                05 DEST PIC 9.
@@ -564,7 +565,11 @@
            ELSE IF R(1) IS EQUAL TO "STRESS" THEN
                PERFORM HANDLE-STRESS
            ELSE IF R(1) IS EQUAL TO "VOICE" THEN
-                   PERFORM HANDLE-VOICE.
+                   PERFORM HANDLE-VOICE
+           ELSE IF R(1) IS EQUAL TO "ECHO" THEN
+               PERFORM HANDLE-ECHO
+           ELSE IF R(1) IS EQUAL TO "CAT" THEN
+               PERFORM HANDLE-CAT.
       D    PERFORM DEBUG-REGISTERS
       D            VARYING WOPO-COUNTER
       D            FROM 1, BY 1
@@ -722,7 +727,7 @@
            STRING "$LOWV$" INTO MSG-BODY OF OUTPUT-BUFFER
                            WITH POINTER PTR(2).
 
-       STRING-PARAMS.
+       STRING-MODE-PARAMS.
            PERFORM GET-PARAM.
            ADD 1 TO PTR(2).
            STRING R(1) DELIMITED BY SPACES
@@ -752,7 +757,7 @@
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
                              NUM-PARAMS OF WOPO
-               PERFORM STRING-PARAMS
+               PERFORM STRING-MODE-PARAMS
                        VARYING PTR(SRC)
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
@@ -787,7 +792,7 @@
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
                              NUM-PARAMS OF WOPO
-               PERFORM STRING-PARAMS
+               PERFORM STRING-MODE-PARAMS
                        VARYING PTR(SRC)
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
@@ -826,7 +831,7 @@
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
                              NUM-PARAMS OF WOPO
-               PERFORM STRING-PARAMS
+               PERFORM STRING-MODE-PARAMS
                        VARYING PTR(SRC)
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
@@ -861,7 +866,7 @@
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
                              NUM-PARAMS OF WOPO
-               PERFORM STRING-PARAMS
+               PERFORM STRING-MODE-PARAMS
                        VARYING PTR(SRC)
                        FROM 1, BY 1
                        UNTIL PTR(SRC) IS GREATER THAN
@@ -1054,6 +1059,41 @@
                   "."
                   INTO R(1).
            MOVE 1 TO SRC.
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
+
+       HANDLE-ECHO.
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
+
+       STRING-CAT-PARAMS.
+           MOVE INPUT-SOURCE TO SRC.
+           PERFORM GET-PARAM.
+           IF R-INDEX(1) IS NUMERIC THEN
+               MOVE R-INDEX(1) TO SRC
+               IF SRC IS LESS THAN 1 OR
+                  SRC IS GREATER THAN 8 THEN
+                   MOVE 99 TO STATE
+               ELSE
+                   STRING R(SRC) DELIMITED BY "$NUL$"
+                          INTO R(2)
+                          WITH POINTER PTR(2)
+           ELSE
+               MOVE 99 TO STATE.
+
+       HANDLE-CAT.
+           MOVE 1 TO DEST, PTR(2).
+           PERFORM INDEX-PARAMS.
+           MOVE 0 TO STATE.
+           PERFORM STRING-CAT-PARAMS
+                   VARYING PTR(INPUT-SOURCE)
+                   FROM 1, BY 1,
+                   UNTIL PTR(INPUT-SOURCE) IS GREATER THAN
+                             NUM-PARAMS OF WOPO
+                         OR DONE.
+           STRING "$NUL$" INTO R(2)
+                  WITH POINTER PTR(2).
+           MOVE 2 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
 
