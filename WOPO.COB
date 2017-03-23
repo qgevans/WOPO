@@ -81,6 +81,7 @@
                    07 PTR PIC 999.
                05 SRC PIC 9.
                05 DEST PIC 9.
+           03 DELIM PIC X.
            03 PARAM PIC 999 OCCURS 9 TIMES.
            03 NUM-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
@@ -483,6 +484,18 @@
                                 WITH POINTER PTR(2)
                        PERFORM HANDLE-COMMAND.
 
+       HANDLE-SWITCHES.
+           UNSTRING R(2) DELIMITED BY "/"
+                    INTO R(3), DELIMITER IN DELIM
+                    WITH POINTER PTR(1).
+           IF SWITCH-PARAM(3) IS NUMERIC THEN
+               IF SWITCH(3) IS EQUAL TO "I" THEN
+                   MOVE SWITCH-PARAM(3) TO INPUT-SOURCE
+               ELSE IF SWITCH(3) IS EQUAL TO "O" THEN
+                   MOVE SWITCH-PARAM(3) TO OUTPUT-DEST.
+           IF DELIM IS NOT EQUAL TO "/" THEN
+               MOVE 99 TO STATE.
+
        HANDLE-COMMAND.
            MOVE 1 TO SRC.
            MOVE 2 TO DEST.
@@ -490,13 +503,18 @@
            MOVE 1 TO PTR(1).
            PERFORM GET-PARAM.
       D    DISPLAY "COMMAND. ", R(2).
+           UNSTRING R(2) DELIMITED BY "/"
+                    INTO R(3)
+                    WITH POINTER PTR(3).
+           IF R(3) IS NOT EQUAL TO R(2) THEN
+               MOVE 0 TO STATE
+               PERFORM HANDLE-SWITCHES UNTIL DONE.
            IF STANDARD-INPUT THEN
                MOVE 2 TO PTR(1)
                MOVE 8 TO DEST
                PERFORM GET-REST
                MOVE 8 TO INPUT-SOURCE.
-      *    HERE GOES THE SWITCH LOGIC
-           MOVE R(2) TO R(1).
+           UNSTRING R(2) DELIMITED BY "/" OR SPACES INTO R(1).
            MOVE INPUT-SOURCE TO SRC.
            IF R(1) IS EQUAL TO "BF-CODE" THEN
                PERFORM HANDLE-BF-CODE
