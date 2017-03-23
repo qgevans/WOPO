@@ -12,7 +12,7 @@
            SELECT USERS
                ASSIGN TO DISK
                ORGANIZATION IS INDEXED
-               ACCESS MODE IS DYNAMIC
+               ACCESS MODE IS SEQUENTIAL
                RECORD KEY IS USER-NAME.
            SELECT CHANNELS
                ASSIGN TO DISK
