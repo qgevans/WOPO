@@ -258,9 +258,14 @@
        GET-MSG-CONTENTS.
            MOVE PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS)
                 TO PTR(DEST).
-           UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY "$NUL$"
+           UNSTRING MSG-BODY OF INPUT-BUFFER DELIMITED BY "$NUL$",
                     INTO R(DEST)
                     WITH POINTER PTR(DEST).
+           SUBTRACT PARAM OF IRC-PARAMS(NUM-PARAMS OF IRC-PARAMS), 4
+                    FROM PTR(DEST).
+           STRING "$NUL$"
+                  INTO R(DEST)
+                  WITH POINTER PTR(DEST).
 
        INDEX-PARAMS.
            MOVE 0 TO NUM-PARAMS OF WOPO, STATE.
@@ -282,7 +287,7 @@
 
        GET-PARAM.
            MOVE PARAM OF WOPO(PTR(SRC)) TO PTR(DEST).
-           UNSTRING R(SRC) DELIMITED BY SPACES
+           UNSTRING R(SRC) DELIMITED BY SPACES OR "$NUL$"
                     INTO R(DEST)
                     WITH POINTER PTR(DEST).
 
@@ -950,7 +955,7 @@
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
                STRING "CODE. ",
-                      BF-CODE,
+                      BF-CODE DELIMITED BY "$NUL$",
                       "$NUL$"
                       INTO R(1)
       D        DISPLAY "BF-CODE. ", BF-CODE
@@ -975,7 +980,7 @@
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
                STRING "INPUT. ",
-                      BF-INPUT,
+                      BF-INPUT DELIMITED BY "$NUL$",
                       "$NUL$"
                       INTO R(1)
       D        DISPLAY "BF-INPUT. ", BF-INPUT
