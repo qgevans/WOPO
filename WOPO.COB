@@ -978,7 +978,7 @@
                       BF-INPUT,
                       "$NUL$"
                       INTO R(1)
-      D        DISPLAY "BF-INPUT. ", BF-CODE
+      D        DISPLAY "BF-INPUT. ", BF-INPUT
                MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
                PERFORM DO-OUTPUT
