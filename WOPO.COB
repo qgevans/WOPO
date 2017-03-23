@@ -930,9 +930,9 @@
                PERFORM REPLY-NAK.
            READ USERS RECORD
                INVALID KEY MOVE 0 TO USER-LEVEL.
-           PERFORM BEGIN-STANDARD-REPLY.
-           STRING USER-RECORD, "$NUL$" INTO R(1).
            MOVE 1 TO SRC.
+           STRING USER-RECORD, "$NUL$" INTO R(1).
+           PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
 
        HANDLE-BF-CODE.
