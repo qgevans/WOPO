@@ -962,10 +962,7 @@
            MOVE 1 TO DEST.
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
-               STRING "CODE. ",
-                      BF-CODE DELIMITED BY "$NUL$",
-                      "$NUL$"
-                      INTO R(1)
+               MOVE BF-CODE TO R(1)
       D        DISPLAY "BF-CODE. ", BF-CODE
                MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
@@ -987,10 +984,7 @@
            MOVE 1 TO DEST.
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
-               STRING "INPUT. ",
-                      BF-INPUT DELIMITED BY "$NUL$",
-                      "$NUL$"
-                      INTO R(1)
+               MOVE BF-INPUT TO R(1)
       D        DISPLAY "BF-INPUT. ", BF-INPUT
                MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
@@ -1010,10 +1004,7 @@
 
        HANDLE-BF-OUTPUT.
       D    DISPLAY "BF OUTPUT. ", BF-OUTPUT.
-           STRING "OUTPUT. " DELIMITED BY SIZE,
-                  BF-OUTPUT DELIMITED BY "$NUL$",
-                  "$NUL$"
-                  INTO R(1).
+           MOVE BF-OUTPUT TO R(1).
            MOVE 1 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
