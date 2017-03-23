@@ -88,7 +88,8 @@
                    UNSTRING BF-CODE DELIMITED BY "$"
                             INTO COBOL-STRING
                             WITH POINTER IP
-                   IF COBOL-STRING IS EQUAL TO SPACES THEN
+                   IF COBOL-STRING IS EQUAL TO SPACES OR
+		      COBOL-STRING IS EQUAL TO "NUL" THEN
                        MOVE "$" TO CURRENT-INSTRUCTION
                    ELSE IF LSQB THEN
                        MOVE "(" TO CURRENT-INSTRUCTION
