@@ -570,7 +570,9 @@
            ELSE IF R(1) IS EQUAL TO "ECHO" THEN
                PERFORM HANDLE-ECHO
            ELSE IF R(1) IS EQUAL TO "CAT" THEN
-               PERFORM HANDLE-CAT.
+               PERFORM HANDLE-CAT
+           ELSE IF R(1) IS EQUAL TO "DUMP-REGS" THEN
+               PERFORM HANDLE-DUMP-REGS.
       D    PERFORM DEBUG-REGISTERS
       D            VARYING WOPO-COUNTER
       D            FROM 1, BY 1
@@ -1097,6 +1099,19 @@
            MOVE 2 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
+
+       DUMP-REG.
+           STRING "R(", WOPO-COUNTER, "). ",
+                   R(WOPO-COUNTER)
+                   INTO R(1).
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
+
+       HANDLE-DUMP-REGS.
+           MOVE 1 TO SRC, WOPO-COUNTER.
+           PERFORM DUMP-REG VARYING WOPO-COUNTER
+                   FROM 1, BY 1,
+                   UNTIL WOPO-COUNTER IS GREATER THAN 8.
 
        HANDLE-CTCP.
       D    DISPLAY "HANDLING CTCP.".
