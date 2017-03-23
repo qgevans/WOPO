@@ -266,6 +266,7 @@
            MOVE 0 TO NUM-PARAMS OF WOPO, STATE.
            MOVE 1 TO PTR(DEST)
            PERFORM INDEX-PARAM UNTIL DONE.
+      D    DISPLAY "NUM-PARAMS. ", NUM-PARAMS OF WOPO.
 
        INDEX-PARAM.
            ADD 1 TO NUM-PARAMS OF WOPO.
@@ -515,6 +516,8 @@
                PERFORM GET-REST
                MOVE 8 TO INPUT-SOURCE.
            UNSTRING R(2) DELIMITED BY "/" OR SPACES INTO R(1).
+      D    DISPLAY "INPUT-SOURCE. ", INPUT-SOURCE,
+      D            " OUTPUT-DEST. ", OUTPUT-DEST.
            MOVE INPUT-SOURCE TO SRC.
            IF R(1) IS EQUAL TO "BF-CODE" THEN
                PERFORM HANDLE-BF-CODE
@@ -557,6 +560,13 @@
                PERFORM HANDLE-STRESS
            ELSE IF R(1) IS EQUAL TO "VOICE" THEN
                    PERFORM HANDLE-VOICE.
+      D    PERFORM DEBUG-REGISTERS
+      D            VARYING WOPO-COUNTER
+      D            FROM 1, BY 1
+      D            UNTIL WOPO-COUNTER IS GREATER THAN 8.
+
+      DDEBUG-REGISTERS.
+      D    DISPLAY "REGISTER ", WOPO-COUNTER, ". ", R(WOPO-COUNTER).
 
        HANDLE-HELP.
            MOVE 1 TO DEST.
