@@ -414,7 +414,14 @@
 
        MAYBE-SHOW-ESCAPES.
            IF SHOULD-SHOW-ESCAPES THEN
-               CALL "RE-ESCAPE" USING R(SRC).
+               IF SRC IS EQUAL TO 1 THEN
+                   CALL "RE-ESCAPE" USING R(SRC), R(2)
+                   MOVE PTR(SRC) TO PTR(2)
+                   MOVE 2 TO SRC
+               ELSE
+                   CALL "RE-ESCAPE" USING R(SRC), R(1)
+                   MOVE PTR(SRC) TO PTR(1)
+                   MOVE 1 TO SRC.
 
        DO-OUTPUT.
            IF STANDARD-OUTPUT THEN
