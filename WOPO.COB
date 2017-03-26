@@ -682,6 +682,7 @@
            READ USERS NEXT RECORD, AT END MOVE 99 TO STATE.
            IF NOT DONE THEN
                STRING USER-RECORD, "$NUL$" INTO R(1)
+               MOVE 1 TO SRC
                PERFORM BEGIN-STANDARD-REPLY
                PERFORM DO-OUTPUT.
 
@@ -1102,6 +1103,7 @@
            STRING "R(", WOPO-COUNTER, "). ",
                    R(WOPO-COUNTER)
                    INTO R(1).
+           MOVE 1 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
 
