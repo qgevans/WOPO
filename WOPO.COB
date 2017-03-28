@@ -34,8 +34,7 @@
            03 USER-NAME PIC X(40).
            03 USER-LEVEL PIC 9(2).
        FD CHANNELS.
-       01 CHANNEL-RECORD.
-           03 CHANNEL-NAME PIC X(50).
+       01 CHANNEL-NAME PIC X(50).
        
        WORKING-STORAGE SECTION.
       *CONFIGURATION "CONSTANTS"
