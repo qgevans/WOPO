@@ -22,6 +22,16 @@
            SELECT CHANNELS
                ASSIGN TO DISK
                ORGANIZATION IS SEQUENTIAL.
+           SELECT PROGRAM-INDEX
+               ASSIGN TO DISK
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS NAME OF INDEX-ENTRY.
+           SELECT PROGRAM-CODE
+               ASSIGN TO DISK
+               ORGANIZATION IS RELATIVE
+               ACCESS MODE IS RANDOM
+               RELATIVE KEY IS PROGRAM-IP.
 
        DATA DIVISION.
        FILE SECTION.
@@ -35,6 +45,21 @@
            03 USER-LEVEL PIC 9(2).
        FD CHANNELS.
        01 CHANNEL-NAME PIC X(50).
+       FD PROGRAM-INDEX.
+       01 INDEX-ENTRY.
+          03 NAME PIC X(16).
+          03 ADDR PIC 999.
+       FD PROGRAM-CODE.
+       01 PROGRAM-RECORD.
+           03 INSTRUCTION.
+               05 IN-REG PIC 9.
+                   88 INPUT-FROM-RECORD VALUE 9.
+               05 OUT-REG PIC 9.
+               05 INTERPRETER PIC X(5).
+               05 INSTRUCTION-CODE PIC X(992).
+           03 RAW-INSTRUCTION REDEFINES INSTRUCTION PIC X(999).
+           03 PREV-IP PIC 999.
+           03 NEXT-IP PIC 999.
        
        WORKING-STORAGE SECTION.
       *CONFIGURATION "CONSTANTS"
@@ -125,6 +150,16 @@
        01 BF-STATE.
            03 MAYBE-CYCLE-LIMIT PIC 9(5)
                VALUE 0.
+
+       01 INTERPRETER-STATE.
+           03 PROGRAM-IP PIC 999.
+           03 IP-TEMP PIC 999.
+
+       01 PROGRAM-LISTING-HEADER.
+           03 FILLER PIC X(4) VALUE " IP.".
+           03 FILLER PIC X(2) VALUE "IO".
+           03 FILLER PIC X(5) VALUE " LANG".
+           03 FILLER PIC X(5) VALUE " CODE".
 
        01 FORMATTED-TIME.
            03 FILLER PIC X VALUE "H".
@@ -523,7 +558,7 @@
            IF R(3) IS NOT EQUAL TO R(2) THEN
                MOVE 0 TO STATE
                PERFORM HANDLE-SWITCHES UNTIL DONE.
-           IF STANDARD-INPUT THEN
+           IF NUM-PARAMS OF WOPO IS GREATER THAN 1 THEN
                MOVE 2 TO PTR(1)
                MOVE 8 TO DEST
                PERFORM GET-REST
@@ -578,7 +613,15 @@
            ELSE IF R(1) IS EQUAL TO "CAT" THEN
                PERFORM HANDLE-CAT
            ELSE IF R(1) IS EQUAL TO "DUMP-REGS" THEN
-               PERFORM HANDLE-DUMP-REGS.
+               PERFORM HANDLE-DUMP-REGS
+           ELSE IF R(1) IS EQUAL TO "PROGRAMS" THEN
+               PERFORM HANDLE-PROGRAMS
+           ELSE IF R(1) IS EQUAL TO "LIST-PROGRAM" THEN
+               PERFORM HANDLE-LIST-PROGRAM
+           ELSE IF R(1) IS EQUAL TO "RUN" THEN
+               PERFORM HANDLE-RUN
+           ELSE
+               PERFORM INTERPRET-PROGRAM.
       D    PERFORM DEBUG-REGISTERS
       D            VARYING WOPO-COUNTER
       D            FROM 1, BY 1
@@ -1111,6 +1154,167 @@
            PERFORM DUMP-REG VARYING WOPO-COUNTER
                    FROM 1, BY 1,
                    UNTIL WOPO-COUNTER IS GREATER THAN 8.
+
+       STRING-PROGRAM-NAME.
+           READ PROGRAM-INDEX NEXT RECORD
+               AT END MOVE 99 TO STATE.
+           IF NOT DONE THEN
+               STRING NAME OF INDEX-ENTRY DELIMITED BY SPACE,
+                      " " DELIMITED BY SIZE
+                      INTO R(1)
+                      WITH POINTER PTR(1).
+
+       HANDLE-PROGRAMS.
+           OPEN INPUT PROGRAM-INDEX.
+           MOVE 1 TO SRC, PTR(1).
+           MOVE 0 TO STATE.
+           PERFORM STRING-PROGRAM-NAME UNTIL DONE.
+           CLOSE PROGRAM-INDEX.
+           STRING "$NUL$"
+                  INTO R(1)
+                  WITH POINTER PTR(1).
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
+
+       LIST-INSTRUCTION.
+           READ PROGRAM-CODE RECORD.
+           MOVE 1 TO SRC, PTR(1).
+           STRING PROGRAM-IP, ".",
+                  RAW-INSTRUCTION OF PROGRAM-RECORD
+                  INTO R(1),
+                  WITH POINTER PTR(1).
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
+           IF NEXT-IP OF PROGRAM-RECORD IS NOT EQUAL TO 0 THEN
+               MOVE NEXT-IP OF PROGRAM-RECORD TO PROGRAM-IP
+           ELSE
+               MOVE 99 TO STATE.
+
+       LIST-PROGRAM.
+           MOVE INPUT-SOURCE TO SRC.
+           PERFORM GET-PARAM.
+           MOVE 1 TO SRC.
+           MOVE R(1) TO NAME OF INDEX-ENTRY.
+           MOVE 0 TO STATE.
+           READ PROGRAM-INDEX RECORD
+               INVALID KEY
+                   MOVE 1 TO PTR(1)
+                   STRING "NO SUCH PROGRAM " DELIMITED BY SIZE,
+                          NAME OF INDEX-ENTRY DELIMITED BY SPACE,
+                          ".$NUL$" DELIMITED BY SIZE
+                          INTO R(1)
+                          WITH POINTER PTR(1)
+                   PERFORM BEGIN-STANDARD-REPLY
+                   PERFORM DO-OUTPUT
+                   MOVE 99 TO STATE.
+           IF NOT DONE THEN
+               PERFORM BEGIN-STANDARD-REPLY
+               PERFORM DO-OUTPUT
+               MOVE PROGRAM-LISTING-HEADER TO R(1)
+               PERFORM BEGIN-STANDARD-REPLY
+               PERFORM DO-OUTPUT
+               MOVE ADDR OF INDEX-ENTRY TO PROGRAM-IP
+               PERFORM LIST-INSTRUCTION UNTIL DONE.
+
+       HANDLE-LIST-PROGRAM.
+           MOVE 1 TO DEST.
+           PERFORM INDEX-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
+               MOVE "<PROGRAM NAME> ..." TO R(1)
+               MOVE 1 TO SRC
+               PERFORM USAGE-REPLY
+           ELSE
+               OPEN INPUT PROGRAM-INDEX, PROGRAM-CODE
+               PERFORM LIST-PROGRAM
+                   VARYING PTR(SRC)
+                   FROM 1, BY 1,
+                   UNTIL PTR(SRC) IS GREATER THAN NUM-PARAMS OF WOPO
+               CLOSE PROGRAM-INDEX, PROGRAM-CODE.
+
+       DO-NEXT-INSTRUCTION.
+           READ PROGRAM-CODE RECORD.
+           IF IN-REG IS NOT EQUAL TO 9 THEN
+               MOVE IN-REG TO INPUT-SOURCE
+           ELSE
+               IF NEXT-IP OF PROGRAM-RECORD IS EQUAL TO 0 THEN
+                   STRING "MISSING INPUT RECORD FOR INSTRUCTION ",
+                          PROGRAM-IP,
+                          " IN PROGRAM " DELIMITED BY SIZE,
+                          NAME OF INDEX-ENTRY DELIMITED BY SPACE,
+                          ".$NUL$"
+                          INTO R(1)
+                   MOVE 1 TO SRC
+                   PERFORM BEGIN-STANDARD-REPLY
+                   PERFORM DO-OUTPUT
+                   MOVE 99 TO STATE
+               ELSE
+                   MOVE PROGRAM-IP TO IP-TEMP
+                   MOVE NEXT-IP OF PROGRAM-RECORD TO PROGRAM-IP
+                   READ PROGRAM-CODE RECORD
+                   MOVE RAW-INSTRUCTION TO R(8)
+                   MOVE 8 TO INPUT-SOURCE
+                   MOVE IP-TEMP TO PROGRAM-IP
+                   READ PROGRAM-CODE RECORD.
+           IF NOT DONE THEN
+               MOVE OUT-REG TO OUTPUT-DEST
+               MOVE INSTRUCTION-CODE TO R(1)
+               IF INTERPRETER OF PROGRAM-RECORD IS EQUAL TO "WOPO" THEN
+                   PERFORM HANDLE-COMMAND
+                   MOVE 0 TO STATE
+               ELSE
+                   STRING "INVALID INTERPRETER " DELIMITED BY SIZE,
+                          INTERPRETER DELIMITED BY SPACE,
+                          " IN INSTRUCTION ",
+                          PROGRAM-IP,
+                          " IN PROGRAM " DELIMITED BY SIZE,
+                          NAME OF INDEX-ENTRY DELIMITED BY SPACE,
+                          ".$NUL$"
+                          INTO R(1)
+                   MOVE 1 TO SRC
+                   PERFORM BEGIN-STANDARD-REPLY
+                   PERFORM DO-OUTPUT
+                   MOVE 99 TO STATE.
+           IF NEXT-IP OF PROGRAM-RECORD IS EQUAL TO 0 THEN
+               MOVE 99 TO STATE
+           ELSE
+               MOVE NEXT-IP OF PROGRAM-RECORD TO PROGRAM-IP.
+
+       INTERPRET-PROGRAM.
+           OPEN INPUT PROGRAM-INDEX.
+           MOVE R(1) TO NAME OF INDEX-ENTRY.
+           MOVE 0 TO STATE.
+           READ PROGRAM-INDEX RECORD
+               INVALID KEY MOVE 99 TO STATE.
+           IF DONE THEN
+               STRING "NO SUCH PROGRAM " DELIMITED BY SIZE
+                      NAME OF INDEX-ENTRY DELIMITED BY SPACE,
+                      ".$NUL$"
+                      INTO R(1)
+               MOVE 1 TO SRC
+               PERFORM BEGIN-STANDARD-REPLY
+               PERFORM DO-OUTPUT
+           ELSE
+               OPEN INPUT PROGRAM-CODE
+               MOVE ADDR OF INDEX-ENTRY TO PROGRAM-IP
+               PERFORM DO-NEXT-INSTRUCTION UNTIL DONE
+               CLOSE PROGRAM-CODE.
+           CLOSE PROGRAM-INDEX.
+
+       HANDLE-RUN.
+           MOVE 1 TO DEST.
+           PERFORM INDEX-PARAMS.
+           IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
+               MOVE "<PROGRAM NAME>" TO R(1)
+               MOVE 1 TO SRC
+               PERFORM USAGE-REPLY
+           ELSE
+               MOVE 1 TO PTR(SRC)
+               PERFORM GET-PARAM
+               IF NUM-PARAMS OF WOPO IS GREATER THAN 1 THEN
+                   MOVE 2 TO PTR(SRC), DEST
+                   PERFORM GET-REST
+                   MOVE R(2) TO R(8).
+               PERFORM INTERPRET-PROGRAM.
 
        HANDLE-CTCP.
       D    DISPLAY "HANDLING CTCP.".
