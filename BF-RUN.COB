@@ -6,7 +6,7 @@
        01 STATE USAGE COMPUTATIONAL.
            03 IN-PTR PIC 9(3) VALUE 1.
            03 IP PIC 9(3) VALUE 1.
-           03 CYCLES PIC 9(5) VALUE 0.
+           03 CYCLES PIC 9(8) VALUE 0.
            03 OUT-PTR PIC 9(3) VALUE 1.
            03 LOOP-DEPTH PIC 99 VALUE 0.
            03 LOOP-WORK PIC 99 VALUE 0.
@@ -54,7 +54,7 @@
            03 BF-INPUT PIC X(999).
            03 BF-CODE PIC X(999).
            03 BF-OUTPUT PIC X(999).
-           03 CYCLE-LIMIT PIC 9(5).
+           03 CYCLE-LIMIT PIC 9(8).
 
        PROCEDURE DIVISION USING BF-I-O.
            MOVE 1 TO IN-PTR.

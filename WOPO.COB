@@ -144,11 +144,11 @@
       -              "--<-)<-)>>-.<+++(>---<-)>.-.$NUL$".
            03 BF-OUTPUT PIC X(999)
                VALUE SPACES.
-           03 CYCLE-LIMIT PIC 9(5)
+           03 CYCLE-LIMIT PIC 9(8)
                VALUE 0.
 
        01 BF-STATE.
-           03 MAYBE-CYCLE-LIMIT PIC 9(5)
+           03 MAYBE-CYCLE-LIMIT PIC 9(8)
                VALUE 0.
 
        01 INTERPRETER-STATE.
@@ -1087,13 +1087,13 @@
                MOVE 1 TO PTR(SRC)
                PERFORM GET-PARAM
                MOVE R(1) TO CYCLE-LIMIT.
-           IF CYCLE-LIMIT > 999 THEN
+           IF CYCLE-LIMIT > 250000 THEN
                IF USER-LEVEL < 90 THEN
                    IF USER-LEVEL < 70 THEN
-                       MOVE 999 TO CYCLE-LIMIT
+                       MOVE 250000 TO CYCLE-LIMIT
                        PERFORM BF-CYCLES-LIMITED
-                   ELSE IF CYCLE-LIMIT > 9999 THEN
-                       MOVE 9999 TO CYCLE-LIMIT
+                   ELSE IF CYCLE-LIMIT > 1900000 THEN
+                       MOVE 1900000 TO CYCLE-LIMIT
                        PERFORM BF-CYCLES-LIMITED.
 
        BF-CYCLES-LIMITED.
