@@ -401,27 +401,21 @@
        BEGIN-REPLY.
            MOVE SPACES TO MSG-BODY OF OUTPUT-BUFFER.
            MOVE 1 TO PTR(SRC).
-           STRING COMMAND OF OUTPUT-SPEC DELIMITED BY SPACES
-                  INTO MSG-BODY OF OUTPUT-BUFFER
-                  WITH POINTER PTR(SRC).
-           ADD 1 TO PTR(SRC).
-           STRING TARGET OF OUTPUT-SPEC DELIMITED BY SPACES
-                  INTO MSG-BODY OF OUTPUT-BUFFER
-                  WITH POINTER PTR(SRC).
-           STRING " $COLN$" DELIMITED BY SIZE
+           STRING COMMAND OF OUTPUT-SPEC DELIMITED BY SPACES,
+                  " " DELIMITED BY SIZE,
+                  TARGET OF OUTPUT-SPEC DELIMITED BY SPACES,
+                  " $COLN$" DELIMITED BY SIZE
                   INTO MSG-BODY OF OUTPUT-BUFFER
                   WITH POINTER PTR(SRC).
 
        BEGIN-STANDARD-REPLY.
            PERFORM BEGIN-REPLY.
            IF TARGET OF OUTPUT-SPEC IS NOT EQUAL TO NICK OF WOPO THEN
-               STRING "$226$$128$$139$"
+               STRING "$226$$128$$139$" DELIMITED BY SIZE,
+                      NICK OF OUTPUT-SPEC DELIMITED BY SPACES,
+                      ". " DELIMITED BY SIZE
                       INTO MSG-BODY OF OUTPUT-BUFFER
                       WITH POINTER PTR(SRC).
-               STRING NICK OF OUTPUT-SPEC DELIMITED BY SPACES
-                     ". " DELIMITED BY SIZE
-                     INTO MSG-BODY OF OUTPUT-BUFFER
-                     WITH POINTER PTR(SRC).
 
        USAGE-REPLY.
            PERFORM BEGIN-STANDARD-REPLY.
@@ -729,6 +723,7 @@
                PERFORM DO-OUTPUT.
 
        HANDLE-JOIN.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -752,6 +747,7 @@
                PERFORM REPLY-NAK.
 
        HANDLE-PART.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -788,6 +784,7 @@
                   WITH POINTER PTR(2).
 
        HANDLE-VOICE.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -823,6 +820,7 @@
                PERFORM REPLY-NAK.
 
        HANDLE-DEVOICE.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -862,6 +860,7 @@
                            WITH POINTER PTR(2).
 
        HANDLE-OP.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -897,6 +896,7 @@
                PERFORM REPLY-NAK.
 
        HANDLE-DEOP.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            MOVE INPUT-SOURCE TO SRC.
@@ -932,6 +932,7 @@
                PERFORM REPLY-NAK.
 
        HANDLE-QUIT.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            MOVE "QUIT-MESSAGE" TO CONFIG-KEY.
            READ CONFIG RECORD
@@ -948,6 +949,7 @@
                PERFORM REPLY-NAK.
 
        HANDLE-SHOW-ESCAPES.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 90 THEN
@@ -976,6 +978,7 @@
            PERFORM DO-OUTPUT.
 
        HANDLE-RELEVEL.
+           MOVE 1 TO SRC.
            PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 99 THEN
@@ -1018,6 +1021,7 @@
                PERFORM BEGIN-STANDARD-REPLY
                PERFORM DO-OUTPUT
            ELSE
+               MOVE 1 TO SRC
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                IF USER-LEVEL IS NOT LESS THAN 60 THEN
@@ -1040,6 +1044,7 @@
                PERFORM BEGIN-STANDARD-REPLY
                PERFORM DO-OUTPUT
            ELSE
+               MOVE 1 TO SRC
                PERFORM REPLY-ACK
                PERFORM VALIDATE-USER
                IF USER-LEVEL IS NOT LESS THAN 50 THEN
@@ -1061,7 +1066,8 @@
 
        HANDLE-BF-RUN.
       D    DISPLAY "HANDLING BF-RUN".
-           PERFORM REPLY-ACK
+           MOVE 1 TO SRC.
+           PERFORM REPLY-ACK.
            PERFORM VALIDATE-USER.
            IF USER-LEVEL IS NOT LESS THAN 50 THEN
                MOVE INPUT-SOURCE TO SRC
