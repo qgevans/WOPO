@@ -504,28 +504,37 @@
       D    DISPLAY "HANDLING MESSAGE."
            MOVE 2 TO DEST.
            PERFORM GET-MSG-CONTENTS.
+      D    DISPLAY "MESSAGE CONTENTS. ", R(2).
            IF IS-CTCP(2) THEN
                PERFORM HANDLE-CTCP
            ELSE
                MOVE 0 TO INPUT-SOURCE, OUTPUT-DEST.
                PERFORM INIT-REPLY
                IF IS-COMMAND(2) THEN
+      D            DISPLAY "PREFIXED COMMAND DETECTED."
                    MOVE COMMAND-BODY(2) TO R(1)
       D            DISPLAY "COMMAND BODY ", R(1)
                    PERFORM HANDLE-COMMAND
                ELSE IF TARGET OF IRC-STATE IS EQUAL TO NICK OF WOPO THEN
+      D            DISPLAY "DIRECT MESSAGE DETECTED."
                    MOVE R(2) TO R(1)
                    PERFORM HANDLE-COMMAND
                ELSE
+      D            DISPLAY "ADDRESSED MESSAGE DETECTED."
                    MOVE 1 TO PTR(2)
                    UNSTRING R(2) DELIMITED BY "$COLN$ "
                             INTO R(1)
                             WITH POINTER PTR(2)
+      D            DISPLAY "NICK ADDRESSED. ", R(1)
                    IF R(1) IS EQUAL TO NICK OF WOPO THEN
+      D                DISPLAY "NICK MATCHED MINE."
                        UNSTRING R(2)
                                 INTO R(1)
                                 WITH POINTER PTR(2)
-                       PERFORM HANDLE-COMMAND.
+                       PERFORM HANDLE-COMMAND
+      D            ELSE
+      D                DISPLAY "NOT TALKING TO ME. I AM ", NICK OF WOPO
+                       .
 
        HANDLE-SWITCHES.
            UNSTRING R(2) DELIMITED BY "/"
