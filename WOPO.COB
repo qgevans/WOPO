@@ -57,6 +57,9 @@
                05 OUT-REG PIC 9.
                05 INTERPRETER PIC X(5).
                05 INSTRUCTION-CODE PIC X(992).
+               05 VM-INSTRUCTION REDEFINES INSTRUCTION-CODE.
+                   07 CYCLE-LIMIT PIC 9(8).
+                   07 VM-CODE PIC X(984).
            03 RAW-INSTRUCTION REDEFINES INSTRUCTION PIC X(999).
            03 PREV-IP PIC 999.
            03 NEXT-IP PIC 999.
@@ -1084,8 +1087,9 @@
                PERFORM INDEX-PARAMS
                IF NUM-PARAMS OF WOPO IS LESS THAN 2 THEN
                    PERFORM BF-LIMIT-CYCLES
-      D            DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT
-                   CALL "BF-RUN" USING BF-I-O
+      D            DISPLAY "CYCLE LIMIT. ", CYCLE-LIMIT OF BF-I-O
+                   CALL "BF-RUN" USING BF-INPUT, BF-CODE,
+                                       BF-OUTPUT, CYCLE-LIMIT OF BF-I-O
       D            DISPLAY "BF RAN"
                    PERFORM HANDLE-BF-OUTPUT
                ELSE
@@ -1097,24 +1101,24 @@
 
        BF-LIMIT-CYCLES.
            IF NUM-PARAMS OF WOPO IS EQUAL TO 0 THEN
-               MOVE 999 TO CYCLE-LIMIT
+               MOVE 999 TO CYCLE-LIMIT OF BF-I-O
            ELSE
                MOVE 1 TO PTR(SRC)
                PERFORM GET-PARAM
-               MOVE R(1) TO CYCLE-LIMIT.
-           IF CYCLE-LIMIT > 250000 THEN
+               MOVE R(1) TO CYCLE-LIMIT OF BF-I-O.
+           IF CYCLE-LIMIT OF BF-I-O > 250000 THEN
                IF USER-LEVEL < 90 THEN
                    IF USER-LEVEL < 70 THEN
-                       MOVE 250000 TO CYCLE-LIMIT
+                       MOVE 250000 TO CYCLE-LIMIT OF BF-I-O
                        PERFORM BF-CYCLES-LIMITED
-                   ELSE IF CYCLE-LIMIT > 1900000 THEN
-                       MOVE 1900000 TO CYCLE-LIMIT
+                   ELSE IF CYCLE-LIMIT OF BF-I-O > 1900000 THEN
+                       MOVE 1900000 TO CYCLE-LIMIT OF BF-I-O
                        PERFORM BF-CYCLES-LIMITED.
 
        BF-CYCLES-LIMITED.
            STRING "INSUFFICIENT LEVEL FOR REQUESTED CYCLE LIMIT. ",
                   "ACTUAL LIMIT WILL BE ",
-                  CYCLE-LIMIT,
+                  CYCLE-LIMIT OF BF-I-O,
                   "."
                   INTO R(1).
            MOVE 1 TO SRC.

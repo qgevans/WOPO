@@ -50,13 +50,13 @@
       D    03 DEBUG-CYCLES PIC 9(5).
 
        LINKAGE SECTION.
-       01 BF-I-O.
-           03 BF-INPUT PIC X(999).
-           03 BF-CODE PIC X(999).
-           03 BF-OUTPUT PIC X(999).
-           03 CYCLE-LIMIT PIC 9(8).
+       01 BF-INPUT PIC X(999).
+       01 BF-CODE PIC X(999).
+       01 BF-OUTPUT PIC X(999).
+       01 CYCLE-LIMIT PIC 9(8).
 
-       PROCEDURE DIVISION USING BF-I-O.
+       PROCEDURE DIVISION USING BF-INPUT, BF-CODE,
+                                BF-OUTPUT, CYCLE-LIMIT.
            MOVE 1 TO IN-PTR.
            MOVE 1 TO IP.
            MOVE 0 TO CYCLES.
