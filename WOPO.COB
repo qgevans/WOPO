@@ -361,10 +361,10 @@
            PERFORM INDEX-PARAMS.
            MOVE 1 TO PTR(2).
            PERFORM GET-PARAM.
-           IF R(1) EQUALS USER-NAME THEN
+           IF R(1) IS EQUAL TO USER-NAME THEN
                MOVE 4 TO PTR(2)
                PERFORM GET-PARAM
-               IF R(1) EQUALS "ACC" THEN
+               IF R(1) IS EQUAL TO "ACC" THEN
                    MOVE 99 TO STATE
                    MOVE 5 TO PTR(2)
                    PERFORM GET-PARAM
