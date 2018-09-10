@@ -2,11 +2,6 @@
        PROGRAM-ID. "WOPO".
 
        ENVIRONMENT DIVISION.
-       CONFIGURATION SECTION.
-       SPECIAL-NAMES.
-           SWITCH-1 IS SHOW-ESCAPES
-               ON STATUS IS SHOULD-SHOW-ESCAPES.
-
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT CONFIG
@@ -114,6 +109,8 @@
            03 NUM-PARAMS PIC 9.
            03 WOPO-COUNTER PIC 9.
       D    03 DEBUG-PTR PIC 9.
+           03 SHOW-ESCAPES PIC 9.
+               88 SHOULD-SHOW-ESCAPES VALUE 1.
 
        01 USERS-HEADER.
            03 FILLER PIC X(40) VALUE "USER NAME.".
@@ -339,7 +336,7 @@
        WAIT-FOR-COMMAND.
            MOVE SPACES TO COMMAND OF IRC-STATE.
            PERFORM RECEIVE-LINE UNTIL
-                   COMMAND OF IRC-STATE EQUALS WAITING-COMMAND.
+                   COMMAND OF IRC-STATE IS EQUAL TO WAITING-COMMAND.
 
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
@@ -972,13 +969,13 @@
                    MOVE 1 TO PTR(SRC)
                    PERFORM GET-PARAM
                    IF R(1) IS EQUAL TO "ON" THEN
-                       SET SHOW-ESCAPES TO ON
+                       MOVE 1 TO SHOW-ESCAPES
                    ELSE IF R(1) IS EQUAL TO "OFF" THEN
-                       SET SHOW-ESCAPES TO OFF
+                       MOVE 0 TO SHOW-ESCAPES
                    ELSE NEXT SENTENCE
                ELSE IF SHOULD-SHOW-ESCAPES THEN
-                   SET SHOW-ESCAPES TO OFF
-               ELSE SET SHOW-ESCAPES TO ON
+                   MOVE 0 TO SHOW-ESCAPES
+               ELSE MOVE 1 TO SHOW-ESCAPES
            ELSE
                PERFORM REPLY-NAK.
            IF SHOULD-SHOW-ESCAPES THEN

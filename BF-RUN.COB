@@ -233,7 +233,7 @@
                ELSE IF BF-END THEN
       D            DISPLAY "FOUND END."
                    SUBTRACT 1 FROM LOOP-WORK
-                   IF LOOP-WORK EQUALS LOOP-DEPTH THEN
+                   IF LOOP-WORK IS EQUAL TO LOOP-DEPTH THEN
                        MOVE 99 TO LOOP-STATE.
       D    DISPLAY "FIND-END.", IP, ";", CURRENT-INSTRUCTION,
       D            "LD", LOOP-DEPTH, "LW", LOOP-WORK.
@@ -255,7 +255,7 @@
                ELSE IF BF-BEGIN THEN
       D            DISPLAY "FOUND BEGIN."
                    SUBTRACT 1 FROM LOOP-WORK
-                   IF LOOP-WORK EQUALS LOOP-DEPTH THEN
+                   IF LOOP-WORK IS EQUAL TO LOOP-DEPTH THEN
                        ADD 1 TO IP
                        MOVE 99 TO LOOP-STATE.
       D    DISPLAY "FIND-BEGIN.", IP, ";", CURRENT-INSTRUCTION,
