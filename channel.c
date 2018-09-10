@@ -181,9 +181,11 @@ void CHANNEL__SEND(char *cobol_buffer, char *state)
 #ifdef DEBUG
   printf("Sending: %s\n", msg_buf);
 #endif
+  /* Let's quit getting WOPO kicked off Freenode */
+  usleep(200000);
   while(sent < total) {
     int status = send(sockfd, msg_buf + sent, total - sent, 0);
- if(status == -1) {
+    if(status == -1) {
       perror("send");
       close(sockfd);
       channel_string_to_cobol(cobol_buffer, "Hung up");
