@@ -312,12 +312,13 @@
        INDEX-PARAM.
            ADD 1 TO NUM-PARAMS OF WOPO.
            MOVE PTR(DEST) TO PARAM OF WOPO(NUM-PARAMS OF WOPO).
+           MOVE SPACES TO R(DEST).
            UNSTRING R(SRC) DELIMITED BY SPACE
                     INTO R(DEST)
                     WITH POINTER PTR(DEST).
            IF R(DEST) IS EQUAL TO SPACES THEN
                SUBTRACT 1 FROM NUM-PARAMS OF WOPO
-               MOVE 99 TO STATE
+               MOVE 99 TO STATE.
            IF NUM-PARAMS OF WOPO IS NOT LESS THAN 9 THEN
                MOVE 99 TO STATE.
 
@@ -514,11 +515,11 @@
       D            DISPLAY "PREFIXED COMMAND DETECTED."
                    MOVE COMMAND-BODY(2) TO R(1)
       D            DISPLAY "COMMAND BODY ", R(1)
-                   PERFORM HANDLE-COMMAND
+                   PERFORM HANDLE-INTERACTIVE-COMMAND
                ELSE IF TARGET OF IRC-STATE IS EQUAL TO NICK OF WOPO THEN
       D            DISPLAY "DIRECT MESSAGE DETECTED."
                    MOVE R(2) TO R(1)
-                   PERFORM HANDLE-COMMAND
+                   PERFORM HANDLE-INTERACTIVE-COMMAND
                ELSE
       D            DISPLAY "ADDRESSED MESSAGE DETECTED."
                    MOVE 1 TO PTR(2)
@@ -531,7 +532,7 @@
                        UNSTRING R(2)
                                 INTO R(1)
                                 WITH POINTER PTR(2)
-                       PERFORM HANDLE-COMMAND
+                       PERFORM HANDLE-INTERACTIVE-COMMAND
       D            ELSE
       D                DISPLAY "NOT TALKING TO ME. I AM ", NICK OF WOPO
                        .
@@ -548,13 +549,17 @@
            IF DELIM IS NOT EQUAL TO "/" THEN
                MOVE 99 TO STATE.
 
+       HANDLE-INTERACTIVE-COMMAND.
+           MOVE SPACES TO R(8).
+           MOVE 8 TO INPUT-SOURCE.
+           PERFORM HANDLE-COMMAND.
+
        HANDLE-COMMAND.
            MOVE 1 TO SRC.
            MOVE 2 TO DEST.
            PERFORM INDEX-PARAMS.
            MOVE 1 TO PTR(1).
            PERFORM GET-PARAM.
-      D    DISPLAY "COMMAND. ", R(2).
            UNSTRING R(2) DELIMITED BY "/"
                     INTO R(3)
                     WITH POINTER PTR(3).
@@ -564,8 +569,7 @@
            IF NUM-PARAMS OF WOPO IS GREATER THAN 1 THEN
                MOVE 2 TO PTR(1)
                MOVE 8 TO DEST
-               PERFORM GET-REST
-               MOVE 8 TO INPUT-SOURCE.
+               PERFORM GET-REST.
            UNSTRING R(2) DELIMITED BY "/" OR SPACES INTO R(1).
       D    DISPLAY "INPUT-SOURCE. ", INPUT-SOURCE,
       D            " OUTPUT-DEST. ", OUTPUT-DEST.
