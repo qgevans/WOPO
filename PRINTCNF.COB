@@ -109,7 +109,8 @@
            READ PROGRAM-CODE RECORD
                AT END MOVE 10 TO STATE.
            IF NOT DONE THEN
-               DISPLAY PROGRAM-IP, ".", INSTRUCTION-RECORD
+               DISPLAY PROGRAM-IP, ".", INSTRUCTION-RECORD, ".",
+                       PREV-IP, ".", NEXT-IP
                IF NEXT-IP OF PROGRAM-RECORD IS EQUAL TO 0 THEN
                    MOVE 10 TO STATE
                ELSE
