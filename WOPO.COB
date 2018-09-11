@@ -313,7 +313,7 @@
            ADD 1 TO NUM-PARAMS OF WOPO.
            MOVE PTR(DEST) TO PARAM OF WOPO(NUM-PARAMS OF WOPO).
            MOVE SPACES TO R(DEST).
-           UNSTRING R(SRC) DELIMITED BY SPACE
+           UNSTRING R(SRC) DELIMITED BY "$$" OR "$NUL$"
                     INTO R(DEST)
                     WITH POINTER PTR(DEST).
            IF R(DEST) IS EQUAL TO SPACES THEN
@@ -324,7 +324,7 @@
 
        GET-PARAM.
            MOVE PARAM OF WOPO(PTR(SRC)) TO PTR(DEST).
-           UNSTRING R(SRC) DELIMITED BY SPACES OR "$NUL$"
+           UNSTRING R(SRC) DELIMITED BY "$$" OR "$NUL$"
                     INTO R(DEST)
                     WITH POINTER PTR(DEST).
 
@@ -338,6 +338,31 @@
            MOVE SPACES TO COMMAND OF IRC-STATE.
            PERFORM RECEIVE-LINE UNTIL
                    COMMAND OF IRC-STATE IS EQUAL TO WAITING-COMMAND.
+
+       INDEX-NICKSERV-PARAMS.
+           MOVE 0 TO NUM-PARAMS OF WOPO, STATE.
+           MOVE 1 TO PTR(DEST)
+           PERFORM INDEX-NICKSERV-PARAM UNTIL DONE.
+      D    DISPLAY "NUM-PARAMS. ", NUM-PARAMS OF WOPO.
+
+       INDEX-NICKSERV-PARAM.
+           ADD 1 TO NUM-PARAMS OF WOPO.
+           MOVE PTR(DEST) TO PARAM OF WOPO(NUM-PARAMS OF WOPO).
+           MOVE SPACES TO R(DEST).
+           UNSTRING R(SRC) DELIMITED BY SPACES OR "$NUL$"
+                    INTO R(DEST)
+                    WITH POINTER PTR(DEST).
+           IF R(DEST) IS EQUAL TO SPACES THEN
+               SUBTRACT 1 FROM NUM-PARAMS OF WOPO
+               MOVE 99 TO STATE.
+           IF NUM-PARAMS OF WOPO IS NOT LESS THAN 9 THEN
+               MOVE 99 TO STATE.
+
+       GET-NICKSERV-PARAM.
+           MOVE PARAM OF WOPO(PTR(SRC)) TO PTR(DEST).
+           UNSTRING R(SRC) DELIMITED BY SPACES OR "$NUL$"
+                    INTO R(DEST)
+                    WITH POINTER PTR(DEST).
 
        VALIDATE-USER.
       D    DISPLAY "ENTERED VALIDATE-USER".
@@ -359,21 +384,21 @@
            PERFORM GET-MSG-CONTENTS.
            MOVE 2 TO SRC.
            MOVE 1 TO DEST.
-           PERFORM INDEX-PARAMS.
+           PERFORM INDEX-NICKSERV-PARAMS.
            MOVE 1 TO PTR(2).
-           PERFORM GET-PARAM.
+           PERFORM GET-NICKSERV-PARAM.
            IF R(1) IS EQUAL TO USER-NAME THEN
                MOVE 4 TO PTR(2)
-               PERFORM GET-PARAM
+               PERFORM GET-NICKSERV-PARAM
                IF R(1) IS EQUAL TO "ACC" THEN
                    MOVE 99 TO STATE
                    MOVE 5 TO PTR(2)
-                   PERFORM GET-PARAM
+                   PERFORM GET-NICKSERV-PARAM
                    IF R(1) IS NOT EQUAL TO "3" THEN
                        MOVE 0 TO USER-LEVEL
                    ELSE
                        MOVE 3 TO PTR(2)
-                       PERFORM GET-PARAM
+                       PERFORM GET-NICKSERV-PARAM
                        MOVE R(1) TO USER-NAME
                        READ USERS RECORD
                            INVALID KEY MOVE 0 TO USER-LEVEL.
@@ -523,7 +548,7 @@
                ELSE
       D            DISPLAY "ADDRESSED MESSAGE DETECTED."
                    MOVE 1 TO PTR(2)
-                   UNSTRING R(2) DELIMITED BY "$COLN$ "
+                   UNSTRING R(2) DELIMITED BY "$COLN$ " OR "$$"
                             INTO R(1)
                             WITH POINTER PTR(2)
       D            DISPLAY "NICK ADDRESSED. ", R(1)
