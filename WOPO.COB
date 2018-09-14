@@ -612,8 +612,8 @@
                PERFORM HANDLE-DEOP
            ELSE IF R(1) IS EQUAL TO "DEVOICE" THEN
                PERFORM HANDLE-DEVOICE
-           ELSE IF R(1) IS EQUAL TO "HELP" THEN
-               PERFORM HANDLE-HELP
+           ELSE IF R(1) IS EQUAL TO "COMMANDS" THEN
+               PERFORM HANDLE-COMMANDS
            ELSE IF R(1) IS EQUAL TO "JOIN" THEN
                PERFORM HANDLE-JOIN
            ELSE IF R(1) IS EQUAL TO "LEVEL" THEN
@@ -652,6 +652,8 @@
                PERFORM HANDLE-LIST-PROGRAM
            ELSE IF R(1) IS EQUAL TO "RUN" THEN
                PERFORM HANDLE-RUN
+           ELSE IF R(1) IS EQUAL TO "HELP" THEN
+               PERFORM HANDLE-HELP
            ELSE
                PERFORM INTERPRET-PROGRAM.
       D    PERFORM DEBUG-REGISTERS
@@ -662,27 +664,16 @@
       DDEBUG-REGISTERS.
       D    DISPLAY "REGISTER ", WOPO-COUNTER, ". ", R(WOPO-COUNTER).
 
-       HANDLE-HELP.
-           MOVE 1 TO DEST.
-           PERFORM INDEX-PARAMS.
-           IF NUM-PARAMS OF WOPO IS GREATER THAN 0 THEN
-               MOVE 1 TO PTR(SRC)
-               PERFORM GET-PARAM
-           ELSE
-               MOVE SPACES TO R(1).
-           IF R(1) IS EQUAL TO "ME" THEN
-               STRING "$240$$159$$142$$135$ ",
-                       "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. ",
-                       "$240$$159$$142$$134$$NUL$"
-                       INTO R(1)
-           ELSE
-               STRING "COMMANDS. "
-                      "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN ",
-                      "$$DEOP $$DEVOICE $$HELP $$JOIN $$LEVEL $$LICK ",
-                      "$$LIST-USERS $$OP $$PART $$RELEVEL $$SHITFED ",
-                      "$$SHOW-ESCAPES $$SOURCE $$STRESS $$VOICE ",
-                      "$NUL$"
-                      INTO R(1).
+       HANDLE-COMMANDS.
+           STRING "COMMANDS. "
+                  "$$BF-CODE $$BF-INPUT $$BF-OUTPUT $$BF-RUN ",
+                  "$$DEOP $$DEVOICE $$COMMANDS $$JOIN $$LEVEL $$LICK ",
+                  "$$LIST-USERS $$OP $$PART $$QUIT $$RELEVEL ",
+                  "$$SHITFED $$SHOW-ESCAPES $$SOURCE $$STRESS ",
+                  "$$VOICE $$ECHO $$CAT $$DUMP-REGS $$PROGRAMS ",
+                  "$$LIST-PROGRAMS $$RUN $$HELP"
+                  "$NUL$"
+                  INTO R(1).
            MOVE 1 TO SRC.
            PERFORM BEGIN-STANDARD-REPLY.
            PERFORM DO-OUTPUT.
@@ -1363,6 +1354,34 @@
                    PERFORM GET-REST
                    MOVE R(2) TO R(8).
                PERFORM INTERPRET-PROGRAM.
+
+       HANDLE-HELP.
+           MOVE 1 TO DEST.
+           PERFORM INDEX-PARAMS.
+           IF NUM-PARAMS OF WOPO IS GREATER THAN 0 THEN
+               MOVE 1 TO PTR(SRC)
+               PERFORM GET-PARAM
+           ELSE
+               MOVE SPACES TO R(1).
+           IF R(1) IS EQUAL TO "ME" THEN
+               STRING "$240$$159$$142$$135$ ",
+                       "GOD HELPS THOSE WHO HELP THEMSELVES, COMMIE. ",
+                       "$240$$159$$142$$134$$NUL$"
+                       INTO R(1)
+           ELSE
+               STRING "COMMANDS BEGIN WITH $$. PARAMETERS ARE ",
+                   "SEPARATED WITH $$ ALSO. EXAMPLES$COLN$ ",
+                   """$$HELP"", ""$$HELP$$ME"". ",
+                   "A SPECIFIC INSTANCE OF THE BOT CAN BE ADDRESSED ",
+                   "IN THE DE FACTO STANDARD WAY ",
+                   "(""WOPO$COLN$ HELP"") OR BY EXTENSION OF ",
+                   "WOPO$SGQT$S SYNTAX (""WOPO$$HELP""). ",
+                   "FOR A LIST OF BUILT-IN COMMANDS, SEE $$COMMANDS",
+                   "$NUL$"
+                  INTO R(1).
+           MOVE 1 TO SRC.
+           PERFORM BEGIN-STANDARD-REPLY.
+           PERFORM DO-OUTPUT.
 
        HANDLE-CTCP.
       D    DISPLAY "HANDLING CTCP.".
