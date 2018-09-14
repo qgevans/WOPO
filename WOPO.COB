@@ -598,6 +598,8 @@
            UNSTRING R(2) DELIMITED BY "/" OR SPACES INTO R(1).
       D    DISPLAY "INPUT-SOURCE. ", INPUT-SOURCE,
       D            " OUTPUT-DEST. ", OUTPUT-DEST.
+           IF STANDARD-INPUT THEN
+               MOVE 8 TO INPUT-SOURCE.
            MOVE INPUT-SOURCE TO SRC.
            IF R(1) IS EQUAL TO "BF-CODE" THEN
                PERFORM HANDLE-BF-CODE
