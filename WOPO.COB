@@ -1028,7 +1028,7 @@
                        REWRITE USER-RECORD
                                INVALID KEY WRITE USER-RECORD
                ELSE
-                   MOVE "<ACCOUNT NAME> <LEVEL>$NUL$" TO R(1)
+                   MOVE "<ACCOUNT NAME>$$<LEVEL>$NUL$" TO R(1)
                    MOVE 1 TO SRC
                    PERFORM USAGE-REPLY
            ELSE
@@ -1259,7 +1259,7 @@
            MOVE 1 TO DEST.
            PERFORM INDEX-PARAMS.
            IF NUM-PARAMS OF WOPO IS LESS THAN 1 THEN
-               MOVE "<PROGRAM NAME> ..." TO R(1)
+               MOVE "<PROGRAM NAME>$$..." TO R(1)
                MOVE 1 TO SRC
                PERFORM USAGE-REPLY
            ELSE
