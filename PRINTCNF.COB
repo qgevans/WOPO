@@ -111,7 +111,7 @@
            IF NOT DONE THEN
                DISPLAY PROGRAM-IP, ".", INSTRUCTION-RECORD, ".",
                        PREV-IP, ".", NEXT-IP
-               IF NEXT-IP OF PROGRAM-RECORD IS EQUAL TO 0 THEN
+               IF NEXT-IP OF PROGRAM-RECORD IS EQUAL TO 999 THEN
                    MOVE 10 TO STATE
                ELSE
                    MOVE NEXT-IP OF PROGRAM-RECORD TO PROGRAM-IP.
