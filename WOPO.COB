@@ -401,6 +401,7 @@
                        MOVE 3 TO PTR(2)
                        PERFORM GET-NICKSERV-PARAM
                        MOVE R(1) TO USER-NAME
+                       MOVE R(1) TO NICK OF IRC-STATE
                        READ USERS RECORD
                            INVALID KEY MOVE 0 TO USER-LEVEL.
 
